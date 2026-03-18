@@ -1,11 +1,9 @@
 /**
- * preload
  * @author: oldj
  * @homepage: https://oldj.net
  */
 
-import { Actions } from '@common/types'
-import { IPopupMenuOption } from '@common/types'
+import type { Actions, IPopupMenuOption } from '@common/types'
 import { contextBridge, ipcRenderer } from 'electron'
 import { EventEmitter } from 'events'
 

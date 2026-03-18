@@ -2,12 +2,10 @@ import react from '@vitejs/plugin-react'
 import * as path from 'path'
 import { defineConfig, normalizePath } from 'vite'
 import { viteStaticCopy } from 'vite-plugin-static-copy'
-import tsconfigPaths from 'vite-tsconfig-paths'
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
-    tsconfigPaths(),
     react(),
     viteStaticCopy({
       targets: [
@@ -21,7 +19,7 @@ export default defineConfig({
   base: './',
   root: path.join(__dirname, 'src', 'renderer'),
   build: {
-    rollupOptions: {
+    rolldownOptions: {
       input: {
         renderer: path.join(__dirname, 'src', 'renderer', 'index.html'),
       },
@@ -37,6 +35,7 @@ export default defineConfig({
     },
   },
   resolve: {
+    tsconfigPaths: true,
     alias: {
       '@': path.resolve(__dirname, 'src'),
       '@root': path.resolve(__dirname),

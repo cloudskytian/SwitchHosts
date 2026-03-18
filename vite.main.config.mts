@@ -1,7 +1,6 @@
 import * as fs from 'fs/promises'
 import * as path from 'path'
 import { defineConfig } from 'vite'
-import tsconfigPaths from 'vite-tsconfig-paths'
 
 const copyMainAssetsPlugin = () => ({
   name: 'copy-main-assets',
@@ -32,25 +31,19 @@ const copyMainAssetsPlugin = () => ({
 
 export default defineConfig({
   plugins: [
-    tsconfigPaths(),
     copyMainAssetsPlugin(),
   ],
   // root: path.join(__dirname, 'src', 'main'),
   base: './',
   build: {
-    rollupOptions: {
+    rolldownOptions: {
       input: {
         main: path.join(__dirname, 'src', 'main', 'main.ts'),
-        preload: path.join(__dirname, 'src', 'main', 'preload.ts'),
-        // renderer: path.join(__dirname, 'src', 'renderer', 'index.html'),
       },
-    },
-    lib: {
-      entry: path.join(__dirname, 'src', 'main', 'main.ts'),
-      name: 'main',
-      formats: ['cjs'],
-      // fileName: (format) => `main.${format}.js`,
-      fileName: (format) => `main.js`,
+      output: {
+        format: 'cjs',
+        entryFileNames: '[name].js',
+      },
     },
     outDir: path.join(__dirname, 'build'),
     minify: true,
@@ -58,6 +51,7 @@ export default defineConfig({
     emptyOutDir: false,
   },
   resolve: {
+    tsconfigPaths: true,
     alias: {
       '@': path.resolve(__dirname, 'src'),
       '@root': path.resolve(__dirname),
