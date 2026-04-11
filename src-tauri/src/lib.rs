@@ -34,22 +34,21 @@ pub fn run() {
             }
         })
         .setup(|app| {
-            let main = app
-                .get_webview_window(lifecycle::MAIN_WINDOW_LABEL)
-                .expect("main window declared in tauri.conf.json");
-
-            // Install Moved/Resized/CloseRequested handlers before
-            // any restore work so early events (e.g. platform-driven
-            // initial resize) get captured.
-            lifecycle::install_main_window_handlers(&main);
-
-            // Restore main window geometry from internal/state.json
-            // (or center on first launch) and reveal the window. The
-            // window starts as visible:false in tauri.conf.json so
-            // there is no flicker between the default position and
-            // the restored position.
+            // Build the main window programmatically with any saved
+            // geometry baked into the builder. Doing this in Rust (as
+            // opposed to tauri.conf.json) is the only way to avoid
+            // the one-frame flash between the default center position
+            // and the restored position on macOS: set_position on a
+            // window declared by conf.json doesn't always take effect
+            // before the compositor paints the first frame.
+            let app_handle = app.handle().clone();
             let app_state = app.state::<AppState>();
-            lifecycle::restore_and_show_main(&main, app_state.inner());
+            let main = lifecycle::create_main_window(&app_handle, app_state.inner())?;
+
+            // Handlers are installed right after build, before any
+            // user interaction, so no Moved/Resized events are lost.
+            lifecycle::install_main_window_handlers(&main);
+            let _ = main.set_focus();
 
             // macOS Dock icon visibility, read once from config. P2.A
             // leaves this as a no-op with a warning; P2.B will wire

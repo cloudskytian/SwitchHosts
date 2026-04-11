@@ -15,12 +15,13 @@ use std::sync::atomic::Ordering;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use tauri::{
-    AppHandle, LogicalPosition, LogicalSize, Manager, Runtime, WebviewWindow, WindowEvent,
+    webview::WebviewWindowBuilder, AppHandle, LogicalPosition, LogicalSize, Manager, Monitor,
+    Runtime, WebviewUrl, WebviewWindow, WindowEvent,
 };
 
 use crate::storage::{
     state::{StateFile, WindowGeometry},
-    AppState,
+    AppState, StorageError,
 };
 
 /// Minimum interval between two geometry persists driven by
@@ -141,38 +142,73 @@ fn read_geometry<R: Runtime>(window: &WebviewWindow<R>) -> Result<WindowGeometry
     })
 }
 
-// ---- geometry restore at startup -------------------------------------------
+// ---- main window creation --------------------------------------------------
 
-/// Restore main window geometry from `internal/state.json` and then
-/// reveal the window. The conf.json declaration starts the window as
-/// `visible: false` so we don't get a flicker between the default
-/// position and the restored position.
-pub fn restore_and_show_main<R: Runtime>(window: &WebviewWindow<R>, app_state: &AppState) {
+/// Create the main window programmatically, baking any saved geometry
+/// into the `WebviewWindowBuilder` so the window appears at its final
+/// position on the very first frame. We deliberately *don't* declare
+/// the main window in `tauri.conf.json` — doing it there means the
+/// window is created with the conf-level defaults (centered, default
+/// size), and a subsequent `set_position` call from `setup` can't
+/// avoid a one-frame flash between the default position and the
+/// restored position.
+///
+/// Called once from `lib.rs::run` inside the Builder's setup hook.
+/// Returns the freshly-created main window; the caller installs
+/// event handlers on it.
+pub fn create_main_window<R: Runtime>(
+    app: &AppHandle<R>,
+    app_state: &AppState,
+) -> Result<WebviewWindow<R>, StorageError> {
     let state = StateFile::load(&app_state.paths.state_file);
-    if let Some(geom) = state.window.main {
-        if geometry_is_visible_on_some_monitor(window, &geom) {
-            apply_geometry(window, &geom);
-        } else {
-            log::info!(
-                "saved main window geometry {geom:?} is off-screen — falling back to default position"
-            );
-            let _ = window.center();
-        }
+    let saved = state.window.main;
+
+    let monitors = app.available_monitors().unwrap_or_default();
+    let saved_on_screen = saved
+        .as_ref()
+        .map(|g| geometry_is_visible_on_monitors(&monitors, g))
+        .unwrap_or(false);
+
+    let mut builder = WebviewWindowBuilder::new(
+        app,
+        MAIN_WINDOW_LABEL,
+        WebviewUrl::App("/".into()),
+    )
+    .title("SwitchHosts")
+    .min_inner_size(300.0, 200.0)
+    .resizable(true);
+
+    if saved_on_screen {
+        let geom = saved.as_ref().unwrap();
+        builder = builder
+            .position(geom.x as f64, geom.y as f64)
+            .inner_size(geom.width as f64, geom.height as f64);
     } else {
-        // First launch — keep the conf.json default centering.
-        let _ = window.center();
+        if saved.is_some() {
+            log::info!(
+                "saved main window geometry is off-screen — falling back to centered default"
+            );
+        }
+        builder = builder.inner_size(800.0, 480.0).center();
     }
 
-    let _ = window.show();
-    let _ = window.set_focus();
-}
+    let window = builder
+        .build()
+        .map_err(|e| StorageError::Io {
+            path: MAIN_WINDOW_LABEL.to_string(),
+            reason: e.to_string(),
+        })?;
 
-fn apply_geometry<R: Runtime>(window: &WebviewWindow<R>, geom: &WindowGeometry) {
-    let _ = window.set_position(LogicalPosition::new(geom.x as f64, geom.y as f64));
-    let _ = window.set_size(LogicalSize::new(geom.width as f64, geom.height as f64));
-    if geom.maximized {
-        let _ = window.maximize();
+    // Apply maximize after build so it takes priority over the baked
+    // initial size without flashing — the window hasn't been painted
+    // yet at this point.
+    if let Some(geom) = saved {
+        if saved_on_screen && geom.maximized {
+            let _ = window.maximize();
+        }
     }
+
+    Ok(window)
 }
 
 /// Conservative on-screen check: any monitor whose logical bounds
@@ -180,13 +216,7 @@ fn apply_geometry<R: Runtime>(window: &WebviewWindow<R>, geom: &WindowGeometry) 
 /// disconnects / DPI changes between launches are the main reason
 /// this matters — we don't want to restore a window onto a monitor
 /// that's no longer plugged in.
-fn geometry_is_visible_on_some_monitor<R: Runtime>(
-    window: &WebviewWindow<R>,
-    geom: &WindowGeometry,
-) -> bool {
-    let Ok(monitors) = window.available_monitors() else {
-        return false;
-    };
+fn geometry_is_visible_on_monitors(monitors: &[Monitor], geom: &WindowGeometry) -> bool {
     for monitor in monitors {
         let scale = monitor.scale_factor();
         let pos = monitor.position().to_logical::<f64>(scale);
