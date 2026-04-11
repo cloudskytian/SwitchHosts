@@ -22,12 +22,20 @@ use std::sync::atomic::Ordering;
 use tauri::image::Image;
 use tauri::menu::{Menu, MenuBuilder, MenuItemBuilder};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
-use tauri::{AppHandle, Manager, Runtime};
+use tauri::webview::WebviewWindowBuilder;
+use tauri::{
+    AppHandle, LogicalPosition, Manager, PhysicalPosition, Rect as TauriRect, Runtime,
+    WebviewUrl, WindowEvent,
+};
 
 use crate::lifecycle::{self, MAIN_WINDOW_LABEL};
 use crate::storage::AppState;
 
 pub const TRAY_ID: &str = "main-tray";
+pub const TRAY_WINDOW_LABEL: &str = "tray";
+
+const TRAY_WINDOW_WIDTH: f64 = 300.0;
+const TRAY_WINDOW_HEIGHT: f64 = 600.0;
 
 pub const MENU_ID_SHOW_MAIN: &str = "tray-show-main";
 pub const MENU_ID_VERSION: &str = "tray-version";
@@ -57,8 +65,8 @@ pub fn install_tray<R: Runtime>(app: &AppHandle<R>) -> Result<(), tauri::Error> 
     // Linux GTK status icons don't deliver discrete click events the
     // way macOS / Windows do — the only reliable interaction surface
     // is the menu. So we let the menu open on every click on Linux,
-    // and use the click handler for "left click → show main window"
-    // on the other two platforms.
+    // and use the click handler for "left click → show main window
+    // or mini window" on the other two platforms.
     #[cfg(not(target_os = "linux"))]
     let builder = builder
         .show_menu_on_left_click(false)
@@ -66,15 +74,39 @@ pub fn install_tray<R: Runtime>(app: &AppHandle<R>) -> Result<(), tauri::Error> 
             if let TrayIconEvent::Click {
                 button: MouseButton::Left,
                 button_state: MouseButtonState::Up,
+                position,
+                rect,
                 ..
             } = event
             {
-                show_main_window(tray.app_handle());
+                handle_left_click(tray.app_handle(), position, rect);
             }
         });
 
     builder.build(app)?;
     Ok(())
+}
+
+fn handle_left_click<R: Runtime>(
+    app: &AppHandle<R>,
+    cursor: PhysicalPosition<f64>,
+    icon_rect: TauriRect,
+) {
+    let mini_enabled = {
+        let state = app.state::<AppState>();
+        state
+            .config
+            .lock()
+            .map(|cfg| cfg.tray_mini_window)
+            .unwrap_or(false)
+    };
+    if mini_enabled {
+        if let Err(e) = show_tray_window(app, cursor, icon_rect) {
+            eprintln!("[v5 tray] failed to show mini window: {e}");
+        }
+    } else {
+        show_main_window(app);
+    }
 }
 
 fn load_icon() -> Image<'static> {
@@ -246,4 +278,131 @@ pub fn set_tray_title<R: Runtime>(app: &AppHandle<R>, title: Option<&str>) {
     if let Some(tray) = app.tray_by_id(TRAY_ID) {
         let _ = tray.set_title(title);
     }
+}
+
+// ---- mini window (`/tray` route) ------------------------------------------
+
+/// Show the mini tray window. Lazy-creates the window on first call,
+/// computes a position next to the tray icon, and brings it forward.
+/// Subsequent calls reuse the existing webview.
+fn show_tray_window<R: Runtime>(
+    app: &AppHandle<R>,
+    cursor: PhysicalPosition<f64>,
+    icon_rect: TauriRect,
+) -> Result<(), String> {
+    let window = match app.get_webview_window(TRAY_WINDOW_LABEL) {
+        Some(w) => w,
+        None => create_tray_window(app).map_err(|e| e.to_string())?,
+    };
+
+    if let Some(logical_pos) = compute_position(app, cursor, icon_rect) {
+        window
+            .set_position(logical_pos)
+            .map_err(|e| e.to_string())?;
+    }
+    window.show().map_err(|e| e.to_string())?;
+    window.set_focus().map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+fn create_tray_window<R: Runtime>(
+    app: &AppHandle<R>,
+) -> Result<tauri::WebviewWindow<R>, tauri::Error> {
+    // The renderer's HashRouter mounts /tray at `#/tray`. WebviewUrl::App
+    // joins its argument into the app base URL via `Url::join`, which
+    // treats `#/tray` as setting the fragment — so the resulting webview
+    // URL is `<base>/#/tray`, exactly what HashRouter expects.
+    let url = WebviewUrl::App("#/tray".into());
+    let window = WebviewWindowBuilder::new(app, TRAY_WINDOW_LABEL, url)
+        .title("SwitchHosts Tray")
+        .inner_size(TRAY_WINDOW_WIDTH, TRAY_WINDOW_HEIGHT)
+        .resizable(false)
+        .maximizable(false)
+        .minimizable(false)
+        .decorations(false)
+        .always_on_top(true)
+        .skip_taskbar(true)
+        .visible_on_all_workspaces(true)
+        .visible(false)
+        .shadow(true)
+        .build()?;
+
+    let window_for_handler = window.clone();
+    window.on_window_event(move |event| {
+        // Hide on focus loss so the popover behaves like a real
+        // menubar mini-window: click outside → it disappears.
+        // The next tray click recreates the position + reshows.
+        if let WindowEvent::Focused(false) = event {
+            let _ = window_for_handler.hide();
+        }
+    });
+
+    Ok(window)
+}
+
+/// Translate the tray icon's physical rect into a logical position
+/// for the mini window so it sits flush against the icon, clamped
+/// inside the active monitor's work area.
+///
+/// macOS / Windows: tray icon physical rect is reliable, so we anchor
+/// the window to the icon centre on the X axis and either above or
+/// below it on the Y axis depending on which half of the screen the
+/// icon lives in. Linux GTK status icons don't deliver useful rects,
+/// but we're not in this code path on Linux today (Linux uses the
+/// menu only).
+///
+/// Returns `None` if no monitor information is available; the caller
+/// should fall back to whatever position the window already had.
+fn compute_position<R: Runtime>(
+    app: &AppHandle<R>,
+    cursor: PhysicalPosition<f64>,
+    icon_rect: TauriRect,
+) -> Option<LogicalPosition<f64>> {
+    let monitor = app
+        .monitor_from_point(cursor.x, cursor.y)
+        .ok()
+        .flatten()
+        .or_else(|| app.primary_monitor().ok().flatten())?;
+
+    let scale = monitor.scale_factor();
+    let work_area = monitor.work_area();
+    let work_x = work_area.position.x as f64 / scale;
+    let work_y = work_area.position.y as f64 / scale;
+    let work_w = work_area.size.width as f64 / scale;
+    let work_h = work_area.size.height as f64 / scale;
+
+    let icon_logical_pos = icon_rect.position.to_logical::<f64>(scale);
+    let icon_logical_size = icon_rect.size.to_logical::<f64>(scale);
+    let icon_x = icon_logical_pos.x;
+    let icon_y = icon_logical_pos.y;
+    let icon_w = icon_logical_size.width;
+    let icon_h = icon_logical_size.height;
+
+    // X: centre under the icon
+    let mut x = icon_x + icon_w / 2.0 - TRAY_WINDOW_WIDTH / 2.0;
+    if x < work_x {
+        x = work_x;
+    }
+    if x + TRAY_WINDOW_WIDTH > work_x + work_w {
+        x = work_x + work_w - TRAY_WINDOW_WIDTH;
+    }
+
+    // Y: below the icon if the icon is in the top half of the screen
+    // (macOS menu bar at top), otherwise above (Windows taskbar at
+    // bottom is the common case).
+    let icon_centre_y = icon_y + icon_h / 2.0;
+    let monitor_centre_y = work_y + work_h / 2.0;
+    let mut y = if icon_centre_y < monitor_centre_y {
+        icon_y + icon_h
+    } else {
+        icon_y - TRAY_WINDOW_HEIGHT - 2.0
+    };
+    if y < work_y {
+        y = work_y;
+    }
+    if y + TRAY_WINDOW_HEIGHT > work_y + work_h {
+        y = work_y + work_h - TRAY_WINDOW_HEIGHT;
+    }
+
+    Some(LogicalPosition::new(x, y))
 }
