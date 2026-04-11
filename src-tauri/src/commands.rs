@@ -26,11 +26,11 @@ type Args = Vec<Value>;
 // ---- small helpers ---------------------------------------------------------
 
 fn load_manifest(state: &AppState) -> Result<Manifest, StorageError> {
-    Manifest::load(&state.paths.manifest_file)
+    Manifest::load(&state.paths)
 }
 
 fn save_manifest(state: &AppState, m: &Manifest) -> Result<(), StorageError> {
-    m.save(&state.paths.manifest_file)
+    m.save(&state.paths)
 }
 
 fn load_trashcan(state: &AppState) -> Result<Trashcan, StorageError> {

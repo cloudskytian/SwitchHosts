@@ -101,11 +101,11 @@ fn import_v3(data: &Value, paths: &V5Paths) -> Result<Value, StorageError> {
         root: converted,
         ..Default::default()
     };
-    manifest.save(&paths.manifest_file)?;
 
     // v3 backups had no trashcan — reset to empty so the user isn't
     // looking at stale entries from a previous import.
     Trashcan::default().save(&paths.trashcan_file)?;
+    manifest.save(paths)?;
 
     Ok(json!(true))
 }
@@ -240,7 +240,7 @@ fn import_v4(data: &Value, paths: &V5Paths) -> Result<Value, StorageError> {
         root: tree,
         ..Default::default()
     }
-    .save(&paths.manifest_file)?;
+    .save(paths)?;
 
     if !history_data.is_empty() {
         write_history(&paths.histories_dir.join("system-hosts.json"), &history_data)?;
@@ -304,7 +304,7 @@ fn import_v5(data: &Value, paths: &V5Paths) -> Result<Value, StorageError> {
         root,
         ..Default::default()
     }
-    .save(&paths.manifest_file)?;
+    .save(paths)?;
 
     Ok(json!(true))
 }
@@ -314,7 +314,7 @@ fn import_v5(data: &Value, paths: &V5Paths) -> Result<Value, StorageError> {
 /// Serialize the current v5 state into a backup JSON and write it to
 /// `dest`. Returns `Ok(())` on success. Hard I/O errors bubble up.
 pub fn export_to_file(dest: &Path, paths: &V5Paths) -> Result<(), StorageError> {
-    let manifest = Manifest::load(&paths.manifest_file).unwrap_or_default();
+    let manifest = Manifest::load(paths).unwrap_or_default();
     let trashcan = Trashcan::load(&paths.trashcan_file).unwrap_or_default();
 
     // Walk the tree and collect every local/remote node id that owns a

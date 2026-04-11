@@ -126,7 +126,7 @@ pub fn run_if_needed(paths: &V5Paths) -> Result<MigrationOutcome, StorageError> 
         root: coerce_root(&snapshot.tree),
         ..Default::default()
     };
-    manifest.save(&paths.manifest_file)?;
+    manifest.save(paths)?;
 
     // ---- 6. archive legacy directories ----
     let mut plan = archiver::new_plan(&paths.root);

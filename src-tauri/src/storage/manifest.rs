@@ -1,19 +1,27 @@
 //! `~/.SwitchHosts/manifest.json` reader, writer, and tree operations.
 //!
-//! Phase 1B step 2 uses the renderer-facing `IHostsListObject` shape
-//! verbatim as the on-disk node shape. Each node is persisted as a raw
-//! `serde_json::Value` under the `root` array so we don't have to
-//! maintain a parallel Rust type hierarchy while the renderer still
-//! drives the contract. A later sub-step will migrate the field names
-//! to the camelCase + nested shape from the storage plan.
-
-use std::path::Path;
+//! As of the Phase 1B "v5 format" sub-step, manifest.json is persisted
+//! in the camelCase + nested shape from the storage plan: `isSys`,
+//! `contentFile`, `source.{url, lastRefresh, lastRefreshMs,
+//! refreshIntervalSec}`, `group.include`, `folder.mode`. The
+//! in-memory `Manifest.root` keeps the renderer-facing
+//! `IHostsListObject` shape so the rest of the storage layer (tree
+//! ops, commands) doesn't have to learn two type hierarchies. The
+//! `tree_format` module translates at the I/O boundary.
+//!
+//! Folder collapse state lives in `internal/state.json`, not in
+//! manifest.json — load() pulls it back in as `is_collapsed: true`
+//! on matching folder nodes, save() extracts it back out before
+//! writing.
 
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
 use super::atomic::atomic_write;
 use super::error::StorageError;
+use super::paths::V5Paths;
+use super::state::StateFile;
+use super::tree_format::{legacy_root_to_v5, v5_root_to_legacy};
 
 pub const MANIFEST_FORMAT: &str = "switchhosts-data";
 pub const MANIFEST_SCHEMA_VERSION: u32 = 1;
@@ -49,39 +57,66 @@ impl Default for Manifest {
 }
 
 impl Manifest {
-    /// Read `manifest.json`.
+    /// Read `manifest.json` and apply collapsed-folder state from
+    /// `internal/state.json`. The returned `Manifest.root` is in the
+    /// renderer-facing legacy shape so the rest of the storage layer
+    /// can manipulate nodes uniformly.
     ///
-    /// - Missing file → empty in-memory manifest, no write. Phase 1B
-    ///   starts every user off with an empty tree until the PotDb
-    ///   migration step runs.
-    /// - Unreadable file → `StorageError::Io`
+    /// - Missing file → empty in-memory manifest. Phase 1B starts
+    ///   every user off with an empty tree until the PotDb migration
+    ///   step runs.
+    /// - Unreadable file → `StorageError::Io`.
     /// - Unparsable file → `StorageError::Parse` (left on disk for the
     ///   user to inspect; the in-memory fallback is *not* persisted).
-    pub fn load(path: &Path) -> Result<Self, StorageError> {
+    /// - Legacy-shaped manifest (pre-v5 sub-step) is also accepted —
+    ///   `tree_format::v5_root_to_legacy` is tolerant of nodes that
+    ///   are already in renderer shape.
+    pub fn load(paths: &V5Paths) -> Result<Self, StorageError> {
+        let path = &paths.manifest_file;
         if !path.exists() {
             return Ok(Self::default());
         }
         let bytes = std::fs::read(path).map_err(|e| {
             StorageError::io(path.display().to_string(), e)
         })?;
-        serde_json::from_slice::<Manifest>(&bytes).map_err(|e| {
+        let raw: Manifest = serde_json::from_slice(&bytes).map_err(|e| {
             StorageError::parse(path.display().to_string(), e)
+        })?;
+
+        let state = StateFile::load(&paths.state_file);
+        let root = v5_root_to_legacy(&raw.root, &state.tree.collapsed_node_ids);
+
+        Ok(Self {
+            format: raw.format,
+            schema_version: raw.schema_version,
+            root,
         })
     }
 
-    pub fn save(&self, path: &Path) -> Result<(), StorageError> {
-        let mut value = json!({
+    /// Write `manifest.json` (in v5 nested camelCase shape) and the
+    /// matching `internal/state.json` slice. Both writes are atomic;
+    /// the manifest is written *after* state.json so a crash between
+    /// the two leaves the user with a slightly stale collapse state
+    /// rather than an out-of-date tree.
+    pub fn save(&self, paths: &V5Paths) -> Result<(), StorageError> {
+        let (v5_root, collapsed_ids) = legacy_root_to_v5(&self.root);
+
+        // 1. Update the collapsed-id slice of state.json. Preserve any
+        //    other state-file fields a future sub-step has added.
+        let mut state = StateFile::load(&paths.state_file);
+        state.tree.collapsed_node_ids = collapsed_ids;
+        state.save(&paths.state_file)?;
+
+        // 2. Write the v5 manifest.json.
+        let envelope = json!({
             "format": MANIFEST_FORMAT,
             "schemaVersion": MANIFEST_SCHEMA_VERSION,
-            "root": self.root.clone(),
+            "root": v5_root,
         });
-        // Ensure the top-level object has stable key ordering for human
-        // readability: format, schemaVersion, root.
-        let obj = value.as_object_mut().expect("manifest value is object");
-        let json = serde_json::to_vec_pretty(obj).map_err(|e| {
-            StorageError::serialize(path.display().to_string(), e)
+        let bytes = serde_json::to_vec_pretty(&envelope).map_err(|e| {
+            StorageError::serialize(paths.manifest_file.display().to_string(), e)
         })?;
-        atomic_write(path, &json)
+        atomic_write(&paths.manifest_file, &bytes)
     }
 }
 

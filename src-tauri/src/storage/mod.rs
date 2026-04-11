@@ -10,7 +10,9 @@ pub mod entries;
 pub mod error;
 pub mod manifest;
 pub mod paths;
+pub mod state;
 pub mod trashcan;
+pub mod tree_format;
 
 pub use config::AppConfig;
 pub use error::StorageError;
