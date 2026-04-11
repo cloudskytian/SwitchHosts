@@ -126,14 +126,32 @@ function detectPlatform(): string {
   return 'linux'
 }
 
+// Broadcast/listen wire format. Every emission is wrapped in an envelope so
+// there is no ambiguity between "one argument that happens to be an array"
+// and "multiple positional arguments". Both .broadcast() and .on()/.once()
+// on the Tauri side agree on this shape; the Electron path keeps its own
+// IPC conventions untouched.
+interface BroadcastEnvelope {
+  _args: unknown[]
+}
+
+function unwrap(payload: unknown): unknown[] {
+  if (payload && typeof payload === 'object' && '_args' in (payload as object)) {
+    const xs = (payload as BroadcastEnvelope)._args
+    return Array.isArray(xs) ? xs : []
+  }
+  // Defensive fallback for payloads emitted outside this adapter
+  // (e.g. a Rust-side emit that doesn't wrap). Treat the raw payload as
+  // a single positional argument.
+  return [payload]
+}
+
 function makeTauriAgent(): IAgent {
   const listenerRegistry = new Map<string, Map<AgentHandler, Promise<UnlistenFn>>>()
 
   const on: IAgent['on'] = (channel, handler) => {
     const unlistenPromise = listen(channel, (event) => {
-      const payload = event.payload as unknown
-      if (Array.isArray(payload)) handler(...payload)
-      else handler(payload)
+      handler(...unwrap(event.payload))
     })
     let channelMap = listenerRegistry.get(channel)
     if (!channelMap) {
@@ -163,7 +181,8 @@ function makeTauriAgent(): IAgent {
     },
 
     broadcast: async (channel, ...args) => {
-      await emit(channel, args.length <= 1 ? args[0] : args)
+      const envelope: BroadcastEnvelope = { _args: args }
+      await emit(channel, envelope)
     },
 
     on,
@@ -171,9 +190,7 @@ function makeTauriAgent(): IAgent {
 
     once: (channel, handler) => {
       const unlistenPromise = tauriOnce(channel, (event) => {
-        const payload = event.payload as unknown
-        if (Array.isArray(payload)) handler(...payload)
-        else handler(payload)
+        handler(...unwrap(event.payload))
       })
       return () => {
         unlistenPromise.then((un) => un()).catch(() => {})
