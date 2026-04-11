@@ -24,6 +24,7 @@ use crate::storage::{
     entries, manifest::{self, Manifest},
     AppState, StorageError, Trashcan,
 };
+use crate::tray;
 
 /// Per-process counter so apply-history ids generated within the
 /// same nanosecond are still unique. Cheap, opaque, never compared
@@ -491,6 +492,13 @@ pub async fn apply_hosts_selection<R: Runtime>(
     // selection display. Wrapped in the standard `_args` envelope.
     let _ = app.emit("system_hosts_updated", json!({ "_args": [] }));
 
+    // Push the freshest tray title to the menubar without waiting on
+    // the renderer to call `update_tray_title` — the user expects to
+    // see the title flip immediately after an apply.
+    if let Err(e) = refresh_tray_title(&app, state.inner()) {
+        eprintln!("[v5 apply] failed to refresh tray title: {e}");
+    }
+
     // Run `cmd_after_hosts_apply` (if configured) as the current user
     // — never elevated. We deliberately await it inside this command
     // so the renderer's existing `await actions.setSystemHosts(...)`
@@ -677,8 +685,32 @@ pub async fn quit_app<R: Runtime>(
 }
 
 #[tauri::command]
-pub async fn update_tray_title(_args: Args) -> Value {
-    Value::Null
+pub async fn update_tray_title<R: Runtime>(
+    app: AppHandle<R>,
+    state: State<'_, AppState>,
+    _args: Args,
+) -> Result<Value, StorageError> {
+    refresh_tray_title(&app, &state)?;
+    Ok(Value::Null)
+}
+
+/// Compute the tray title from the current manifest + config and push
+/// it to the tray icon. Used both by the `update_tray_title` command
+/// (renderer-driven) and by `apply_hosts_selection` after a successful
+/// write so the menubar text stays in sync without a renderer round
+/// trip.
+fn refresh_tray_title<R: Runtime>(
+    app: &AppHandle<R>,
+    state: &AppState,
+) -> Result<(), StorageError> {
+    let show = {
+        let cfg = state.config.lock().expect("config mutex poisoned");
+        cfg.show_title_on_tray
+    };
+    let manifest = load_manifest(state)?;
+    let title = tray::compute_tray_title(&manifest.root, show);
+    tray::set_tray_title(app, title.as_deref());
+    Ok(())
 }
 
 #[tauri::command]

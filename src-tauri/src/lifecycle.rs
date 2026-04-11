@@ -236,22 +236,22 @@ fn geometry_is_visible_on_monitors(monitors: &[Monitor], geom: &WindowGeometry) 
 
 // ---- macOS dock icon -------------------------------------------------------
 
-/// Honour `hide_dock_icon`. Only meaningful on macOS; called once at
-/// startup, mirroring the Electron implementation.
-///
-/// **Intentionally a no-op in Phase 2.A**: setting
-/// `ActivationPolicy::Accessory` without a tray icon to summon the
-/// main window leaves the user with no way to get the window back
-/// (no Dock icon, no tray, no menu bar). P2.B re-enables this once
-/// the tray icon lands so "hide dock + use tray" actually works.
-pub fn apply_dock_icon_policy<R: Runtime>(_app: &AppHandle<R>, hide: bool) {
-    if hide {
-        log::warn!(
-            "hide_dock_icon = true is temporarily ignored — it will be honoured once the system tray lands in Phase 2.B. Without a tray, hiding the Dock icon would leave the main window unreachable."
-        );
-        eprintln!(
-            "[v5 P2.A] hide_dock_icon is ignored in this build. Wait for Phase 2.B (tray icon) to enable it safely."
-        );
+/// Honour `hide_dock_icon`. Only meaningful on macOS — switches the
+/// app between `Regular` (Dock icon visible, full menu bar) and
+/// `Accessory` (no Dock icon, tray-only). Safe to call at runtime
+/// because P2.B installed a tray icon as a permanent way to summon
+/// the window back.
+pub fn apply_dock_icon_policy<R: Runtime>(_app: &AppHandle<R>, _hide: bool) {
+    #[cfg(target_os = "macos")]
+    {
+        let policy = if _hide {
+            tauri::ActivationPolicy::Accessory
+        } else {
+            tauri::ActivationPolicy::Regular
+        };
+        if let Err(e) = _app.set_activation_policy(policy) {
+            eprintln!("[v5 tray] failed to set activation policy: {e}");
+        }
     }
 }
 

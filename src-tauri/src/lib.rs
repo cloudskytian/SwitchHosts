@@ -4,9 +4,10 @@ mod import_export;
 mod lifecycle;
 mod migration;
 mod storage;
+mod tray;
 
 use serde_json::json;
-use tauri::{Emitter, Manager, RunEvent};
+use tauri::{Emitter, Listener, Manager, RunEvent};
 
 use storage::AppState;
 
@@ -30,6 +31,15 @@ pub fn run() {
         // keep working without any renderer changes.
         .on_menu_event(|app, event| {
             let id = event.id().as_ref();
+            // Tray menu items are routed to the tray module's
+            // dispatch table; popup_menu items are forwarded back to
+            // the renderer as same-named Tauri events. Order matters
+            // only because tray ids are short and never collide with
+            // the long renderer-generated `popup_menu_item_*` ids.
+            if id.starts_with("tray-") {
+                tray::handle_menu_event(app, id);
+                return;
+            }
             if id.starts_with("popup_menu_item_") {
                 let _ = app.emit(id, json!({ "_args": [] }));
             }
@@ -51,9 +61,12 @@ pub fn run() {
             lifecycle::install_main_window_handlers(&main);
             let _ = main.set_focus();
 
-            // macOS Dock icon visibility, read once from config. P2.A
-            // leaves this as a no-op with a warning; P2.B will wire
-            // it up alongside the tray icon.
+            // Tray icon must exist before we honour `hide_dock_icon`,
+            // otherwise an `Accessory` activation policy on macOS would
+            // strand the user (no Dock icon, no tray to summon the
+            // window back).
+            tray::install_tray(&app_handle)?;
+
             #[cfg(target_os = "macos")]
             {
                 let hide = app_state
@@ -63,6 +76,23 @@ pub fn run() {
                     .unwrap_or(false);
                 lifecycle::apply_dock_icon_policy(&app.handle(), hide);
             }
+
+            // The tray window (P2.B.2) and a few existing dialogs
+            // (SetWriteMode, SudoPasswordInput) all broadcast
+            // `events.active_main_window` when they want the main
+            // window to come forward. The Electron build had a
+            // matching `message.on('active_main_window', onActive)`
+            // handler in `src/main/main.ts`; we mirror it via the
+            // global event bus so the renderer's existing call sites
+            // keep working unchanged.
+            let active_main_app = app_handle.clone();
+            app.listen("active_main_window", move |_event| {
+                lifecycle::focus_main_on_second_instance(
+                    &active_main_app,
+                    Vec::new(),
+                    String::new(),
+                );
+            });
 
             Ok(())
         })
