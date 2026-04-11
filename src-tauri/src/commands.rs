@@ -11,7 +11,8 @@
 //! storage access.
 
 use serde_json::{json, Value};
-use tauri::State;
+use tauri::menu::{MenuBuilder, MenuItemBuilder};
+use tauri::{AppHandle, Emitter, Runtime, State, WebviewWindow};
 
 use crate::storage::{
     entries, manifest::{self, Manifest},
@@ -511,6 +512,77 @@ pub async fn download_update(_args: Args) -> Value {
 #[tauri::command]
 pub async fn install_update(_args: Args) -> Value {
     Value::Null
+}
+
+// ---- popup menu ------------------------------------------------------------
+//
+// The renderer's PopupMenu helper stays unchanged: for each menu item with
+// a click handler it generates a unique `_click_evt` event name, registers
+// an `agent.once(_click_evt, handler)`, then calls `agent.popupMenu({menu_id,
+// items})`. We build a Tauri context menu using the same `_click_evt` strings
+// as menu item ids, show it at the cursor, then emit a close signal. The
+// matching click event is fan-out by the `.on_menu_event(...)` handler
+// installed in `lib.rs` which forwards any menu id starting with
+// `popup_menu_item_` as a same-named Tauri event.
+
+#[tauri::command]
+pub fn popup_menu<R: Runtime>(
+    app: AppHandle<R>,
+    window: WebviewWindow<R>,
+    args: Args,
+) -> Result<Value, String> {
+    let spec = args.into_iter().next().unwrap_or(Value::Null);
+    let menu_id = spec
+        .get("menu_id")
+        .and_then(Value::as_str)
+        .unwrap_or("")
+        .to_string();
+    let items: Vec<Value> = spec
+        .get("items")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+
+    let mut builder = MenuBuilder::new(&app);
+    let mut fallback_counter = 0u32;
+    for item in &items {
+        let item_type = item.get("type").and_then(Value::as_str);
+        if item_type == Some("separator") {
+            builder = builder.separator();
+            continue;
+        }
+
+        let label = item.get("label").and_then(Value::as_str).unwrap_or("");
+        let enabled = item.get("enabled").and_then(Value::as_bool).unwrap_or(true);
+        let id = match item.get("_click_evt").and_then(Value::as_str) {
+            Some(evt) if !evt.is_empty() => evt.to_string(),
+            _ => {
+                fallback_counter += 1;
+                format!("__swh_popup_noop_{fallback_counter}")
+            }
+        };
+
+        let mi = MenuItemBuilder::with_id(&id, label)
+            .enabled(enabled)
+            .build(&app)
+            .map_err(|e| e.to_string())?;
+        builder = builder.item(&mi);
+    }
+
+    let menu = builder.build().map_err(|e| e.to_string())?;
+    window.popup_menu(&menu).map_err(|e| e.to_string())?;
+
+    // The popup call is synchronous on all three desktop platforms (NSMenu
+    // modal on macOS, TrackPopupMenu with TPM_RETURNCMD on Windows, GTK main
+    // iteration loop on Linux). By the time it returns, any click event has
+    // already been routed through the on_menu_event handler, so emitting the
+    // close signal now is safe.
+    let _ = app.emit(
+        &format!("popup_menu_close:{menu_id}"),
+        json!({ "_args": [] }),
+    );
+
+    Ok(Value::Null)
 }
 
 // ---- data dir --------------------------------------------------------------

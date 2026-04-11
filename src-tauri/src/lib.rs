@@ -1,6 +1,9 @@
 mod commands;
 mod storage;
 
+use serde_json::json;
+use tauri::Emitter;
+
 use storage::AppState;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -10,6 +13,17 @@ pub fn run() {
 
     tauri::Builder::default()
         .manage(state)
+        // Popup menu item clicks are routed back to the renderer as Tauri
+        // events: the menu item id equals the renderer-generated
+        // `_click_evt` string, so forwarding the id verbatim as an event
+        // name lets the existing `agent.once(_click_evt, handler)` pattern
+        // keep working without any renderer changes.
+        .on_menu_event(|app, event| {
+            let id = event.id().as_ref();
+            if id.starts_with("popup_menu_item_") {
+                let _ = app.emit(id, json!({ "_args": [] }));
+            }
+        })
         .setup(|_app| Ok(()))
         .invoke_handler(tauri::generate_handler![
             // startup critical
@@ -65,6 +79,7 @@ pub fn run() {
             commands::update_tray_title,
             commands::open_url,
             commands::show_item_in_folder,
+            commands::popup_menu,
             // import / export
             commands::export_data,
             commands::import_data,

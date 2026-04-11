@@ -197,10 +197,15 @@ function makeTauriAgent(): IAgent {
       }
     },
 
-    popupMenu: (options) => {
-      // TODO Phase 1B: route through Rust tauri::menu API and emit
-      // popup_menu_item_* / popup_menu_close:<menu_id> events back.
-      console.warn('[v5] popupMenu not yet wired in Tauri adapter', options)
+    popupMenu: async (options) => {
+      // The renderer's PopupMenu helper pre-registers `agent.once(_click_evt, ...)`
+      // listeners for each item before calling us, and expects a matching
+      // `popup_menu_close:<menu_id>` event once the menu dismisses. The Rust
+      // `popup_menu` command builds a native context menu from the same spec,
+      // shows it at the cursor, emits the click events via the global
+      // on_menu_event handler in lib.rs, then emits the close signal after
+      // dismissal.
+      await invoke('popup_menu', { args: [options] })
     },
 
     darkModeToggle: async (theme) => {
