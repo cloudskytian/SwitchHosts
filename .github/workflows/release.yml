@@ -199,20 +199,25 @@ jobs:
             # Only touch SwitchHosts artifacts
             case "$NAME" in SwitchHosts*) ;; *) continue ;; esac
 
+            # Skip updater-internal files — their names are referenced
+            # by latest.json URLs, so renaming them would break the
+            # auto-update pipeline. Users never download these directly.
+            case "$NAME" in
+              *.app.tar.gz|*.app.tar.gz.sig) continue ;;
+              *.nsis.zip|*.nsis.zip.sig)     continue ;;
+              *.AppImage.tar.gz|*.AppImage.tar.gz.sig) continue ;;
+              latest.json) continue ;;
+            esac
+
             NEW="$NAME"
 
             # 1. Main pattern: SwitchHosts_{ver}_{arch}… → SwitchHosts-{ver}-{platform}-{arch}…
             NEW=$(echo "$NEW" | sed "s|^SwitchHosts_${VERSION}_|SwitchHosts-${VERSION}-${PLATFORM}-|")
 
-            # 2. Files without version (macOS .app.tar.gz): SwitchHosts_{arch}… → insert version + platform
-            NEW=$(echo "$NEW" | sed "s|^SwitchHosts_\([a-zA-Z0-9_]*\)\.\(app\.tar\.gz\)|SwitchHosts-${VERSION}-${PLATFORM}-\1.\2|")
-            # Also handle the .sig companion
-            NEW=$(echo "$NEW" | sed "s|^SwitchHosts_\([a-zA-Z0-9_]*\)\.\(app\.tar\.gz\.sig\)|SwitchHosts-${VERSION}-${PLATFORM}-\1.\2|")
-
-            # 3. RPM uses its own format: SwitchHosts-{ver}-1.{arch}.rpm → normalise
+            # 2. RPM uses its own format: SwitchHosts-{ver}-1.{arch}.rpm → normalise
             NEW=$(echo "$NEW" | sed "s|^SwitchHosts-${VERSION}-1\.\([a-zA-Z0-9_]*\)\.rpm|SwitchHosts-${VERSION}-${PLATFORM}-\1.rpm|")
 
-            # 4. Drop _en-US from MSI name
+            # 3. Drop _en-US from MSI name
             NEW=$(echo "$NEW" | sed "s|_en-US\\.msi|.msi|")
 
             if [ "$NEW" != "$NAME" ]; then
