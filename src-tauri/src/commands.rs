@@ -102,8 +102,23 @@ pub async fn migration_status(_args: Args) -> Value {
 }
 
 #[tauri::command]
-pub async fn dark_mode_toggle(_args: Args) -> Value {
-    // Phase 1B will call Tauri window `set_theme`.
+pub async fn dark_mode_toggle<R: Runtime>(app: AppHandle<R>, args: Args) -> Value {
+    let theme_str = args.first().and_then(Value::as_str).unwrap_or("system");
+    let theme = match theme_str {
+        "light" => Some(tauri::Theme::Light),
+        "dark" => Some(tauri::Theme::Dark),
+        _ => None, // "system" → follow OS
+    };
+    // Set theme on all known windows so native title bars match
+    for label in [
+        lifecycle::MAIN_WINDOW_LABEL,
+        crate::tray::TRAY_WINDOW_LABEL,
+        crate::find::FIND_WINDOW_LABEL,
+    ] {
+        if let Some(w) = app.get_webview_window(label) {
+            let _ = w.set_theme(theme);
+        }
+    }
     Value::Null
 }
 

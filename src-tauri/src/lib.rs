@@ -140,7 +140,17 @@ pub fn run() {
             // Handlers are installed right after build, before any
             // user interaction, so no Moved/Resized events are lost.
             lifecycle::install_main_window_handlers(&main);
-            let _ = main.set_focus();
+
+            let hide_at_launch = app_state
+                .config
+                .lock()
+                .map(|cfg| cfg.hide_at_launch)
+                .unwrap_or(false);
+            if hide_at_launch {
+                let _ = main.hide();
+            } else {
+                let _ = main.set_focus();
+            }
 
             // Application menu (Phase 2.D minimal: defaults + Find).
             // The full P2.C menu lands later but we need an entry
