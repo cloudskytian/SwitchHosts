@@ -163,10 +163,10 @@ jobs:
           includeUpdaterJson: true
           args: ${{ matrix.args }}
 
-      # Sign updater archives and upload .sig files manually.
-      # tauri-action creates .app.tar.gz / .nsis.zip / .AppImage.tar.gz
-      # but its internal signing logic doesn't reliably produce .sig
-      # files, so we run `tauri signer sign` ourselves.
+      # Sign updater archives. tauri-action renames files during upload
+      # (e.g. SwitchHosts.app.tar.gz → SwitchHosts_aarch64.app.tar.gz),
+      # so we download the UPLOADED archives from the release, sign them,
+      # and upload the .sig files with matching names.
       - name: Sign updater archives
         if: steps.tag.outputs.name != ''
         shell: bash
@@ -175,6 +175,7 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          TAG="${{ steps.tag.outputs.name }}"
           RELEASE_ID="${{ steps.tauri.outputs.releaseId }}"
           REPO="${{ github.repository }}"
           if [ -z "$RELEASE_ID" ] || [ -z "$TAURI_SIGNING_PRIVATE_KEY" ]; then
@@ -182,23 +183,25 @@ jobs:
             exit 0
           fi
 
-          # Find updater archives in the build output
-          ARCHIVES=$(find src-tauri/target -type f \( \
-            -name "*.app.tar.gz" -o \
-            -name "*.nsis.zip" -o \
-            -name "*.AppImage.tar.gz" \
-          \) ! -name "*.sig" 2>/dev/null)
+          mkdir -p /tmp/updater-sign
 
-          for ARCHIVE in $ARCHIVES; do
-            echo "Signing: $ARCHIVE"
-            npx tauri signer sign "$ARCHIVE"
-            SIG="${ARCHIVE}.sig"
+          # Find updater archives (.app.tar.gz / .nsis.zip / .AppImage.tar.gz) in the release
+          gh api "repos/$REPO/releases/$RELEASE_ID/assets" --paginate \
+            --jq '.[] | select(.name | test("\\.(app\\.tar\\.gz|nsis\\.zip|AppImage\\.tar\\.gz)$")) | "\(.id)\t\(.name)"' | \
+          while IFS=$'\t' read -r AID NAME; do
+            echo "Downloading: $NAME"
+            gh api -H "Accept: application/octet-stream" \
+              "repos/$REPO/releases/assets/$AID" > "/tmp/updater-sign/$NAME"
+
+            echo "Signing: $NAME"
+            npx tauri signer sign "/tmp/updater-sign/$NAME"
+
+            SIG="/tmp/updater-sign/${NAME}.sig"
             if [ -f "$SIG" ]; then
-              echo "Uploading: $(basename "$SIG")"
-              gh release upload "${{ steps.tag.outputs.name }}" "$SIG" \
-                --repo "$REPO" --clobber
+              echo "Uploading: ${NAME}.sig"
+              gh release upload "$TAG" "$SIG" --repo "$REPO" --clobber
             else
-              echo "::warning::Signature file not created for $ARCHIVE"
+              echo "::warning::Signature not created for $NAME"
             fi
           done
 
@@ -306,70 +309,77 @@ jobs:
 
           DOWNLOAD_BASE="https://github.com/$REPO/releases/download/$TAG"
 
-          # Helper: read .sig file content from release assets
-          get_sig() {
-            local sig_name="$1"
-            gh api "repos/$REPO/releases/$RELEASE_ID/assets" --paginate \
-              --jq ".[] | select(.name == \"$sig_name\") | .url" | head -1 | \
-              xargs -I{} gh api -H "Accept: application/octet-stream" {} 2>/dev/null || echo ""
-          }
-
-          # Collect per-platform entries
+          # Build platform entries dynamically from actual .sig assets.
+          # For each .sig file, derive the archive name and the Tauri
+          # platform key from the filename pattern.
           PLATFORMS="{}"
 
-          # macOS universal
-          SIG=$(get_sig "SwitchHosts_universal.app.tar.gz.sig")
-          if [ -n "$SIG" ]; then
-            PLATFORMS=$(echo "$PLATFORMS" | jq \
-              --arg url "$DOWNLOAD_BASE/SwitchHosts_universal.app.tar.gz" \
-              --arg sig "$SIG" \
-              '. + {"darwin-universal": {"url": $url, "signature": $sig}}')
-          fi
+          gh api "repos/$REPO/releases/$RELEASE_ID/assets" --paginate \
+            --jq '.[] | select(.name | endswith(".sig")) | "\(.id)\t\(.name)"' | \
+          while IFS=$'\t' read -r AID SIG_NAME; do
+            # Download sig content
+            SIG_CONTENT=$(gh api -H "Accept: application/octet-stream" \
+              "repos/$REPO/releases/assets/$AID" 2>/dev/null)
+            [ -z "$SIG_CONTENT" ] && continue
 
-          # macOS aarch64
-          SIG=$(get_sig "SwitchHosts_aarch64.app.tar.gz.sig")
-          if [ -n "$SIG" ]; then
-            PLATFORMS=$(echo "$PLATFORMS" | jq \
-              --arg url "$DOWNLOAD_BASE/SwitchHosts_aarch64.app.tar.gz" \
-              --arg sig "$SIG" \
-              '. + {"darwin-aarch64": {"url": $url, "signature": $sig}}')
-          fi
+            # Derive archive name (strip .sig suffix)
+            ARCHIVE_NAME="${SIG_NAME%.sig}"
 
-          # macOS x64
-          SIG=$(get_sig "SwitchHosts_x64.app.tar.gz.sig")
-          if [ -n "$SIG" ]; then
-            PLATFORMS=$(echo "$PLATFORMS" | jq \
-              --arg url "$DOWNLOAD_BASE/SwitchHosts_x64.app.tar.gz" \
-              --arg sig "$SIG" \
-              '. + {"darwin-x86_64": {"url": $url, "signature": $sig}}')
-          fi
+            # Determine Tauri platform key from filename
+            PLATFORM_KEY=""
+            case "$ARCHIVE_NAME" in
+              *_universal.app.tar.gz)  PLATFORM_KEY="darwin-universal" ;;
+              *_aarch64.app.tar.gz)    PLATFORM_KEY="darwin-aarch64" ;;
+              *_x64.app.tar.gz)        PLATFORM_KEY="darwin-x86_64" ;;
+              *_x64-setup.nsis.zip)    PLATFORM_KEY="windows-x86_64" ;;
+              *_x86-setup.nsis.zip)    PLATFORM_KEY="windows-i686" ;;
+              *_arm64-setup.nsis.zip)  PLATFORM_KEY="windows-aarch64" ;;
+              *_amd64.AppImage.tar.gz) PLATFORM_KEY="linux-x86_64" ;;
+              *_aarch64.AppImage.tar.gz) PLATFORM_KEY="linux-aarch64" ;;
+            esac
+            [ -z "$PLATFORM_KEY" ] && continue
 
-          # Windows x64
-          SIG=$(get_sig "SwitchHosts_${VERSION}_x64-setup.nsis.zip.sig")
-          if [ -n "$SIG" ]; then
+            echo "  $PLATFORM_KEY → $ARCHIVE_NAME"
             PLATFORMS=$(echo "$PLATFORMS" | jq \
-              --arg url "$DOWNLOAD_BASE/SwitchHosts_${VERSION}_x64-setup.nsis.zip" \
-              --arg sig "$SIG" \
-              '. + {"windows-x86_64": {"url": $url, "signature": $sig}}')
-          fi
+              --arg key "$PLATFORM_KEY" \
+              --arg url "$DOWNLOAD_BASE/$ARCHIVE_NAME" \
+              --arg sig "$SIG_CONTENT" \
+              '. + {($key): {"url": $url, "signature": $sig}}')
+          done
 
-          # Linux x86_64
-          SIG=$(get_sig "SwitchHosts_${VERSION}_amd64.AppImage.tar.gz.sig")
-          if [ -n "$SIG" ]; then
-            PLATFORMS=$(echo "$PLATFORMS" | jq \
-              --arg url "$DOWNLOAD_BASE/SwitchHosts_${VERSION}_amd64.AppImage.tar.gz" \
-              --arg sig "$SIG" \
-              '. + {"linux-x86_64": {"url": $url, "signature": $sig}}')
-          fi
+          # The while loop runs in a subshell (pipe), so $PLATFORMS
+          # changes are lost. Re-read from the actual assets:
+          PLATFORMS="{}"
+          for entry in $(gh api "repos/$REPO/releases/$RELEASE_ID/assets" --paginate \
+            --jq '.[] | select(.name | endswith(".sig")) | .id'); do
 
-          # Linux aarch64
-          SIG=$(get_sig "SwitchHosts_${VERSION}_aarch64.AppImage.tar.gz.sig")
-          if [ -n "$SIG" ]; then
+            ASSET=$(gh api "repos/$REPO/releases/assets/$entry")
+            SIG_NAME=$(echo "$ASSET" | jq -r '.name')
+            SIG_CONTENT=$(gh api -H "Accept: application/octet-stream" \
+              "repos/$REPO/releases/assets/$entry" 2>/dev/null)
+            [ -z "$SIG_CONTENT" ] && continue
+
+            ARCHIVE_NAME="${SIG_NAME%.sig}"
+            PLATFORM_KEY=""
+            case "$ARCHIVE_NAME" in
+              *_universal.app.tar.gz)    PLATFORM_KEY="darwin-universal" ;;
+              *_aarch64.app.tar.gz)      PLATFORM_KEY="darwin-aarch64" ;;
+              *_x64.app.tar.gz)          PLATFORM_KEY="darwin-x86_64" ;;
+              *_x64-setup.nsis.zip)      PLATFORM_KEY="windows-x86_64" ;;
+              *_x86-setup.nsis.zip)      PLATFORM_KEY="windows-i686" ;;
+              *_arm64-setup.nsis.zip)    PLATFORM_KEY="windows-aarch64" ;;
+              *_amd64.AppImage.tar.gz)   PLATFORM_KEY="linux-x86_64" ;;
+              *_aarch64.AppImage.tar.gz) PLATFORM_KEY="linux-aarch64" ;;
+            esac
+            [ -z "$PLATFORM_KEY" ] && continue
+
+            echo "  $PLATFORM_KEY → $ARCHIVE_NAME"
             PLATFORMS=$(echo "$PLATFORMS" | jq \
-              --arg url "$DOWNLOAD_BASE/SwitchHosts_${VERSION}_aarch64.AppImage.tar.gz" \
-              --arg sig "$SIG" \
-              '. + {"linux-aarch64": {"url": $url, "signature": $sig}}')
-          fi
+              --arg key "$PLATFORM_KEY" \
+              --arg url "$DOWNLOAD_BASE/$ARCHIVE_NAME" \
+              --arg sig "$SIG_CONTENT" \
+              '. + {($key): {"url": $url, "signature": $sig}}')
+          done
 
           NOW=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
           LATEST=$(jq -n \
@@ -381,6 +391,5 @@ jobs:
           echo "$LATEST" | jq .
           echo "$LATEST" > latest.json
 
-          # Upload (clobber if already exists from a previous run)
           gh release upload "$TAG" latest.json --repo "$REPO" --clobber
           echo "latest.json uploaded with $(echo "$PLATFORMS" | jq 'keys | length') platform(s)"
