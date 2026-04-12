@@ -66,6 +66,7 @@ pub fn run() {
             |app, args, cwd| lifecycle::focus_main_on_second_instance(app, args, cwd),
         ))
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(
             tauri_plugin_log::Builder::new()
                 .level(log::LevelFilter::Info)

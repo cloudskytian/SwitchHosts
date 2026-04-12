@@ -1029,18 +1029,95 @@ async fn fetch_url(client: &reqwest::Client, url: &str) -> Result<String, String
 // ---- updater ---------------------------------------------------------------
 
 #[tauri::command]
-pub async fn check_update(_args: Args) -> Value {
-    json!({ "has_update": false })
+pub async fn check_update<R: Runtime>(
+    app: AppHandle<R>,
+    _args: Args,
+) -> Result<Value, String> {
+    use tauri_plugin_updater::UpdaterExt;
+
+    let updater = app.updater_builder().build().map_err(|e| e.to_string())?;
+    let update = updater.check().await.map_err(|e| e.to_string())?;
+
+    match update {
+        Some(update) => {
+            let info = json!({
+                "has_update": true,
+                "version": update.version,
+                "releaseNotes": update.body,
+            });
+            let _ = app.emit("new_version", json!({ "_args": [info.clone()] }));
+            Ok(info)
+        }
+        None => Ok(json!({ "has_update": false })),
+    }
 }
 
 #[tauri::command]
-pub async fn download_update(_args: Args) -> Value {
-    Value::Null
+pub async fn download_update<R: Runtime>(
+    app: AppHandle<R>,
+    state: State<'_, AppState>,
+    _args: Args,
+) -> Result<Value, String> {
+    use tauri_plugin_updater::UpdaterExt;
+
+    let updater = app.updater_builder().build().map_err(|e| e.to_string())?;
+    let update = updater
+        .check()
+        .await
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| "no update available".to_string())?;
+
+    let app_for_progress = app.clone();
+    update
+        .download_and_install(
+            move |downloaded, total| {
+                let percent = total
+                    .map(|t| if t > 0 { (downloaded as f64 / t as f64) * 100.0 } else { 0.0 })
+                    .unwrap_or(0.0);
+                let _ = app_for_progress.emit(
+                    "update_download_progress",
+                    json!({ "_args": [{
+                        "percent": percent,
+                        "transferred": downloaded,
+                        "total": total.unwrap_or(0),
+                        "bytesPerSecond": 0,
+                    }] }),
+                );
+            },
+            || {},
+        )
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if let Some(window) = app.get_webview_window(lifecycle::MAIN_WINDOW_LABEL) {
+        lifecycle::persist_window_geometry(&window, state.inner());
+    }
+    state
+        .is_will_quit
+        .store(true, std::sync::atomic::Ordering::SeqCst);
+
+    let _ = app.emit(
+        "update_downloaded",
+        json!({ "_args": [{ "version": "" }] }),
+    );
+    Ok(Value::Null)
 }
 
 #[tauri::command]
-pub async fn install_update(_args: Args) -> Value {
-    Value::Null
+pub async fn install_update<R: Runtime>(
+    app: AppHandle<R>,
+    state: State<'_, AppState>,
+    _args: Args,
+) -> Result<Value, String> {
+    if let Some(window) = app.get_webview_window(lifecycle::MAIN_WINDOW_LABEL) {
+        lifecycle::persist_window_geometry(&window, state.inner());
+    }
+    state
+        .is_will_quit
+        .store(true, std::sync::atomic::Ordering::SeqCst);
+    app.restart();
+    #[allow(unreachable_code)]
+    Ok(Value::Null)
 }
 
 // ---- popup menu ------------------------------------------------------------
