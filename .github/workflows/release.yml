@@ -65,7 +65,7 @@ jobs:
             args: --target universal-apple-darwin
             rust_targets: aarch64-apple-darwin,x86_64-apple-darwin
           # Linux x64
-          - platform: ubuntu-22.04
+          - platform: ubuntu-latest
             args: ''
             rust_targets: ''
           # Windows x64
