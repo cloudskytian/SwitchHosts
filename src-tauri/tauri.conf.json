@@ -32,11 +32,29 @@
     "macOS": {
       "signingIdentity": "Developer ID Application: Hangzhou Tongming Technology Company Limited (J5J6USUX2F)",
       "entitlements": "../scripts/entitlements.mac.plist",
-      "minimumSystemVersion": "10.15"
+      "minimumSystemVersion": "10.15",
+      "dmg": {
+        "background": "../assets/dmg-bg.png",
+        "windowSize": {
+          "width": 600,
+          "height": 420
+        },
+        "appPosition": {
+          "x": 150,
+          "y": 200
+        },
+        "applicationFolderPosition": {
+          "x": 450,
+          "y": 200
+        }
+      }
     },
     "windows": {
       "certificateThumbprint": null,
-      "timestampUrl": "http://timestamp.digicert.com"
+      "timestampUrl": "http://timestamp.digicert.com",
+      "nsis": {
+        "installerIcon": "../assets/installer-icon.ico"
+      }
     }
   },
   "plugins": {
