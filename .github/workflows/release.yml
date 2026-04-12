@@ -60,22 +60,33 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # macOS universal binary (arm64 + x86_64 fat binary)
+          # ── macOS ──────────────────────────────────────────────
           - platform: macos-latest
             args: --target universal-apple-darwin
             rust_targets: aarch64-apple-darwin,x86_64-apple-darwin
-          # Linux x64
+          - platform: macos-latest
+            args: --target aarch64-apple-darwin
+            rust_targets: aarch64-apple-darwin
+          - platform: macos-latest
+            args: --target x86_64-apple-darwin
+            rust_targets: x86_64-apple-darwin
+          # ── Linux ──────────────────────────────────────────────
           - platform: ubuntu-latest
             args: ''
             rust_targets: ''
-          # Windows x64 — NSIS only; MSI requires numeric-only
-          # pre-release identifiers (e.g. 5.0.0-7 ok, 5.0.0-beta.7 not)
-          # which conflicts with semver conventions. NSIS is the standard
-          # user-facing Windows installer; MSI can be added back for
-          # stable releases if enterprise deployment needs it.
+          - platform: ubuntu-24.04-arm
+            args: ''
+            rust_targets: ''
+          # ── Windows (NSIS only — MSI rejects non-numeric pre-release) ──
           - platform: windows-latest
             args: --bundles nsis
             rust_targets: ''
+          - platform: windows-latest
+            args: --target i686-pc-windows-msvc --bundles nsis
+            rust_targets: i686-pc-windows-msvc
+          - platform: windows-latest
+            args: --target aarch64-pc-windows-msvc --bundles nsis
+            rust_targets: aarch64-pc-windows-msvc
 
     runs-on: ${{ matrix.platform }}
 
@@ -193,11 +204,13 @@ jobs:
             # 1. Main pattern: SwitchHosts_{ver}_{arch}… → SwitchHosts-{ver}-{platform}-{arch}…
             NEW=$(echo "$NEW" | sed "s|^SwitchHosts_${VERSION}_|SwitchHosts-${VERSION}-${PLATFORM}-|")
 
-            # 2. macOS .app.tar.gz has no version: SwitchHosts_universal… → insert version + platform
-            NEW=$(echo "$NEW" | sed "s|^SwitchHosts_universal|SwitchHosts-${VERSION}-${PLATFORM}-universal|")
+            # 2. Files without version (macOS .app.tar.gz): SwitchHosts_{arch}… → insert version + platform
+            NEW=$(echo "$NEW" | sed "s|^SwitchHosts_\([a-zA-Z0-9_]*\)\.\(app\.tar\.gz\)|SwitchHosts-${VERSION}-${PLATFORM}-\1.\2|")
+            # Also handle the .sig companion
+            NEW=$(echo "$NEW" | sed "s|^SwitchHosts_\([a-zA-Z0-9_]*\)\.\(app\.tar\.gz\.sig\)|SwitchHosts-${VERSION}-${PLATFORM}-\1.\2|")
 
-            # 3. RPM uses its own format: SwitchHosts-{ver}-1.x86_64.rpm → normalise
-            NEW=$(echo "$NEW" | sed "s|^SwitchHosts-${VERSION}-1\\.x86_64|SwitchHosts-${VERSION}-${PLATFORM}-x86_64|")
+            # 3. RPM uses its own format: SwitchHosts-{ver}-1.{arch}.rpm → normalise
+            NEW=$(echo "$NEW" | sed "s|^SwitchHosts-${VERSION}-1\.\([a-zA-Z0-9_]*\)\.rpm|SwitchHosts-${VERSION}-${PLATFORM}-\1.rpm|")
 
             # 4. Drop _en-US from MSI name
             NEW=$(echo "$NEW" | sed "s|_en-US\\.msi|.msi|")
