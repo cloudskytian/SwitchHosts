@@ -5,15 +5,16 @@
  *   - `src-tauri/tauri.conf.json`  (consumed by Tauri bundler)
  *
  * Called in two contexts:
- *   1. `npm run postversion` — after `npm version X.Y.Z` bumps
- *      package.json, this script propagates the new value.
+ *   1. `npm version X.Y.Z` via the `version` lifecycle script — after
+ *      npm bumps package.json/package-lock.json and before it creates
+ *      the release commit and tag, this script propagates the new value.
  *   2. `npm run build:renderer:tauri` — the `beforeBuildCommand` in
  *      tauri.conf.json, ensures the build always picks up the latest
- *      version even if postversion was skipped (e.g. --no-git-tag-version).
+ *      version even if the release lifecycle was bypassed.
  */
 
 import { readFileSync, writeFileSync } from 'fs'
-import { join, dirname } from 'path'
+import { dirname, join } from 'path'
 import { fileURLToPath } from 'url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
