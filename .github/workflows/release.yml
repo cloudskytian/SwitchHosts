@@ -163,6 +163,45 @@ jobs:
           includeUpdaterJson: true
           args: ${{ matrix.args }}
 
+      # Sign updater archives and upload .sig files manually.
+      # tauri-action creates .app.tar.gz / .nsis.zip / .AppImage.tar.gz
+      # but its internal signing logic doesn't reliably produce .sig
+      # files, so we run `tauri signer sign` ourselves.
+      - name: Sign updater archives
+        if: steps.tag.outputs.name != ''
+        shell: bash
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          RELEASE_ID="${{ steps.tauri.outputs.releaseId }}"
+          REPO="${{ github.repository }}"
+          if [ -z "$RELEASE_ID" ] || [ -z "$TAURI_SIGNING_PRIVATE_KEY" ]; then
+            echo "Skipping signing (no release ID or no signing key)"
+            exit 0
+          fi
+
+          # Find updater archives in the build output
+          ARCHIVES=$(find src-tauri/target -type f \( \
+            -name "*.app.tar.gz" -o \
+            -name "*.nsis.zip" -o \
+            -name "*.AppImage.tar.gz" \
+          \) ! -name "*.sig" 2>/dev/null)
+
+          for ARCHIVE in $ARCHIVES; do
+            echo "Signing: $ARCHIVE"
+            npx tauri signer sign "$ARCHIVE"
+            SIG="${ARCHIVE}.sig"
+            if [ -f "$SIG" ]; then
+              echo "Uploading: $(basename "$SIG")"
+              gh release upload "${{ steps.tag.outputs.name }}" "$SIG" \
+                --repo "$REPO" --clobber
+            else
+              echo "::warning::Signature file not created for $ARCHIVE"
+            fi
+          done
+
       # Rename release assets to the project's convention:
       #   SwitchHosts-{version}-{platform}-{arch}.{ext}
       # Uses the GitHub API PATCH endpoint to rename in place (no
@@ -225,3 +264,123 @@ jobs:
               gh api -X PATCH "repos/$REPO/releases/assets/$AID" -f name="$NEW" --silent
             fi
           done
+
+  # ── Generate latest.json after all platform builds complete ───────
+  updater-manifest:
+    needs: release
+    if: ${{ needs.release.result == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve tag
+        id: tag
+        shell: bash
+        run: |
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            echo "name=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          elif [ -n "${{ github.event.inputs.tag }}" ]; then
+            echo "name=${{ github.event.inputs.tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Generate latest.json
+        if: steps.tag.outputs.name != ''
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.tag.outputs.name }}"
+          VERSION=$(node -p "require('./package.json').version")
+          REPO="${{ github.repository }}"
+
+          # Get release ID from tag (release is a draft, so use list endpoint)
+          RELEASE_ID=$(gh api "repos/$REPO/releases" --paginate \
+            --jq ".[] | select(.tag_name == \"$TAG\") | .id" | head -1)
+          if [ -z "$RELEASE_ID" ]; then
+            echo "::warning::No release found for tag $TAG"
+            exit 0
+          fi
+
+          DOWNLOAD_BASE="https://github.com/$REPO/releases/download/$TAG"
+
+          # Helper: read .sig file content from release assets
+          get_sig() {
+            local sig_name="$1"
+            gh api "repos/$REPO/releases/$RELEASE_ID/assets" --paginate \
+              --jq ".[] | select(.name == \"$sig_name\") | .url" | head -1 | \
+              xargs -I{} gh api -H "Accept: application/octet-stream" {} 2>/dev/null || echo ""
+          }
+
+          # Collect per-platform entries
+          PLATFORMS="{}"
+
+          # macOS universal
+          SIG=$(get_sig "SwitchHosts_universal.app.tar.gz.sig")
+          if [ -n "$SIG" ]; then
+            PLATFORMS=$(echo "$PLATFORMS" | jq \
+              --arg url "$DOWNLOAD_BASE/SwitchHosts_universal.app.tar.gz" \
+              --arg sig "$SIG" \
+              '. + {"darwin-universal": {"url": $url, "signature": $sig}}')
+          fi
+
+          # macOS aarch64
+          SIG=$(get_sig "SwitchHosts_aarch64.app.tar.gz.sig")
+          if [ -n "$SIG" ]; then
+            PLATFORMS=$(echo "$PLATFORMS" | jq \
+              --arg url "$DOWNLOAD_BASE/SwitchHosts_aarch64.app.tar.gz" \
+              --arg sig "$SIG" \
+              '. + {"darwin-aarch64": {"url": $url, "signature": $sig}}')
+          fi
+
+          # macOS x64
+          SIG=$(get_sig "SwitchHosts_x64.app.tar.gz.sig")
+          if [ -n "$SIG" ]; then
+            PLATFORMS=$(echo "$PLATFORMS" | jq \
+              --arg url "$DOWNLOAD_BASE/SwitchHosts_x64.app.tar.gz" \
+              --arg sig "$SIG" \
+              '. + {"darwin-x86_64": {"url": $url, "signature": $sig}}')
+          fi
+
+          # Windows x64
+          SIG=$(get_sig "SwitchHosts_${VERSION}_x64-setup.nsis.zip.sig")
+          if [ -n "$SIG" ]; then
+            PLATFORMS=$(echo "$PLATFORMS" | jq \
+              --arg url "$DOWNLOAD_BASE/SwitchHosts_${VERSION}_x64-setup.nsis.zip" \
+              --arg sig "$SIG" \
+              '. + {"windows-x86_64": {"url": $url, "signature": $sig}}')
+          fi
+
+          # Linux x86_64
+          SIG=$(get_sig "SwitchHosts_${VERSION}_amd64.AppImage.tar.gz.sig")
+          if [ -n "$SIG" ]; then
+            PLATFORMS=$(echo "$PLATFORMS" | jq \
+              --arg url "$DOWNLOAD_BASE/SwitchHosts_${VERSION}_amd64.AppImage.tar.gz" \
+              --arg sig "$SIG" \
+              '. + {"linux-x86_64": {"url": $url, "signature": $sig}}')
+          fi
+
+          # Linux aarch64
+          SIG=$(get_sig "SwitchHosts_${VERSION}_aarch64.AppImage.tar.gz.sig")
+          if [ -n "$SIG" ]; then
+            PLATFORMS=$(echo "$PLATFORMS" | jq \
+              --arg url "$DOWNLOAD_BASE/SwitchHosts_${VERSION}_aarch64.AppImage.tar.gz" \
+              --arg sig "$SIG" \
+              '. + {"linux-aarch64": {"url": $url, "signature": $sig}}')
+          fi
+
+          NOW=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          LATEST=$(jq -n \
+            --arg version "$VERSION" \
+            --arg pub_date "$NOW" \
+            --argjson platforms "$PLATFORMS" \
+            '{version: $version, pub_date: $pub_date, platforms: $platforms}')
+
+          echo "$LATEST" | jq .
+          echo "$LATEST" > latest.json
+
+          # Upload (clobber if already exists from a previous run)
+          gh release upload "$TAG" latest.json --repo "$REPO" --clobber
+          echo "latest.json uploaded with $(echo "$PLATFORMS" | jq 'keys | length') platform(s)"
