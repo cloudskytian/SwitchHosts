@@ -14,7 +14,7 @@ import styles from './AboutContent.module.scss'
 
 const AboutContent = () => {
   const { lang } = useI18n()
-  const version_str = version.slice(0, 3).join('.') + ` (${version[3]})`
+  const version_str = version
 
   return (
     <Stack gap="4px" align="stretch">

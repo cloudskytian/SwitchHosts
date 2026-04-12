@@ -9,7 +9,7 @@ import { flatten } from '@common/hostsFn'
 import { v4 as uuid4 } from 'uuid'
 import version from '@/version.json'
 
-const app_version = version as unknown as VersionType
+const app_version: VersionType = version
 
 const normalizeList = (list: IHostsListObject[]): IHostsListObject[] => {
   let flat = flatten(list)
@@ -41,7 +41,7 @@ export default async (): Promise<IHostsBasicData> => {
 
   let list = normalizeList(await swhdb.list.tree.all())
   let trashcan = normalizeTrashcan(await swhdb.list.trashcan.all())
-  let v = (await swhdb.dict.meta.get<VersionType>('version', app_version)) || [0, 0, 0, 0]
+  let v = (await swhdb.dict.meta.get<VersionType>('version', app_version)) || '0.0.0'
 
   return {
     ...default_data,

@@ -51,7 +51,7 @@ const makeTray = async () => {
   const i18n = new I18N(locale)
   const { lang } = i18n
 
-  const ver = version.slice(0, 3).join('.') + ` (${version[3]})`
+  const ver = version
 
   if (process.platform === 'linux') {
     const menu = Menu.buildFromTemplate([

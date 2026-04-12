@@ -83,12 +83,10 @@ pub async fn get_basic_data(
 ) -> Result<Value, StorageError> {
     let manifest = load_manifest(&state)?;
     let trashcan = load_trashcan(&state)?;
-    let version: Value = serde_json::from_str(env!("SWH_VERSION_ARRAY"))
-        .expect("SWH_VERSION_ARRAY is injected by build.rs and always valid JSON");
     Ok(json!({
         "list": manifest.root,
         "trashcan": trashcan.items,
-        "version": version,
+        "version": env!("SWH_VERSION"),
     }))
 }
 

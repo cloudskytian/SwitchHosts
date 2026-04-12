@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 /**
- * Sync the `version` field in `src-tauri/tauri.conf.json` from the
- * single source of truth at `src/version.json`.
+ * Sync the version from `package.json` to:
+ *   - `src/version.json`     (consumed by renderer + Rust build.rs)
+ *   - `src-tauri/tauri.conf.json`  (consumed by Tauri bundler)
  *
- * Tauri's conf file only accepts three-segment semver, so we take
- * the first three elements of the `[major, minor, patch, build]`
- * array and join them with dots.
- *
- * Called automatically by `npm run build:renderer:tauri` (the
- * `beforeBuildCommand` in tauri.conf.json) and can also be run
- * manually: `node scripts/sync-tauri-version.mjs`
+ * Called in two contexts:
+ *   1. `npm run postversion` — after `npm version X.Y.Z` bumps
+ *      package.json, this script propagates the new value.
+ *   2. `npm run build:renderer:tauri` — the `beforeBuildCommand` in
+ *      tauri.conf.json, ensures the build always picks up the latest
+ *      version even if postversion was skipped (e.g. --no-git-tag-version).
  */
 
 import { readFileSync, writeFileSync } from 'fs'
@@ -19,16 +19,28 @@ import { fileURLToPath } from 'url'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const root = join(__dirname, '..')
 
-const version = JSON.parse(readFileSync(join(root, 'src/version.json'), 'utf-8'))
-const semver = version.slice(0, 3).join('.')
+// Source of truth
+const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf-8'))
+const version = pkg.version
 
+// 1. src/version.json
+const versionJsonPath = join(root, 'src/version.json')
+const oldVersionJson = readFileSync(versionJsonPath, 'utf-8').trim()
+const newVersionJson = JSON.stringify(version)
+if (oldVersionJson !== newVersionJson) {
+  writeFileSync(versionJsonPath, newVersionJson + '\n', 'utf-8')
+  console.log(`[sync-version] src/version.json → ${version}`)
+} else {
+  console.log(`[sync-version] src/version.json already ${version}`)
+}
+
+// 2. src-tauri/tauri.conf.json
 const confPath = join(root, 'src-tauri/tauri.conf.json')
 const conf = JSON.parse(readFileSync(confPath, 'utf-8'))
-
-if (conf.version !== semver) {
-  conf.version = semver
+if (conf.version !== version) {
+  conf.version = version
   writeFileSync(confPath, JSON.stringify(conf, null, 2) + '\n', 'utf-8')
-  console.log(`[sync-tauri-version] updated tauri.conf.json version to ${semver}`)
+  console.log(`[sync-version] tauri.conf.json → ${version}`)
 } else {
-  console.log(`[sync-tauri-version] tauri.conf.json version already ${semver}`)
+  console.log(`[sync-version] tauri.conf.json already ${version}`)
 }

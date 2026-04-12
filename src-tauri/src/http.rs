@@ -15,7 +15,7 @@ use crate::storage::AppState;
 const DEFAULT_TIMEOUT: Duration = Duration::from_secs(30);
 const USER_AGENT: &str = concat!(
     "SwitchHosts/",
-    env!("SWH_VERSION_THREE"),
+    env!("SWH_VERSION"),
     " (Tauri; ",
     env!("CARGO_PKG_NAME"),
     ")"

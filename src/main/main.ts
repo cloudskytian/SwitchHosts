@@ -157,7 +157,7 @@ const onActive = async () => {
 global.tracer = new Tracer()
 
 app.on('ready', async () => {
-  console.log(`VERSION: ${version.join('.')}`)
+  console.log(`VERSION: ${version}`)
   global.session_id = uuid4()
   await checkSystemLocale()
 
