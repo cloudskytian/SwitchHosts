@@ -163,6 +163,42 @@ jobs:
           includeUpdaterJson: true
           args: ${{ matrix.args }}
 
+      # Create updater archives for Windows and Linux.
+      # tauri-action only creates .app.tar.gz for macOS. Windows and
+      # Linux updater archives must be built manually.
+      - name: Create updater archives (Windows)
+        if: runner.os == 'Windows' && steps.tag.outputs.name != ''
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.tag.outputs.name }}"
+          REPO="${{ github.repository }}"
+          # Find all NSIS setup executables
+          find src-tauri/target -name "*-setup.exe" -path "*/bundle/nsis/*" | while read EXE; do
+            BASE=$(basename "$EXE" .exe)
+            ZIP_NAME="${BASE}.nsis.zip"
+            echo "Creating: $ZIP_NAME from $EXE"
+            (cd "$(dirname "$EXE")" && powershell -Command "Compress-Archive -Path '$(basename "$EXE")' -DestinationPath '$ZIP_NAME' -Force")
+            gh release upload "$TAG" "$(dirname "$EXE")/$ZIP_NAME" --repo "$REPO" --clobber
+          done
+
+      - name: Create updater archives (Linux)
+        if: runner.os == 'Linux' && steps.tag.outputs.name != ''
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.tag.outputs.name }}"
+          REPO="${{ github.repository }}"
+          # Find all AppImage files
+          find src-tauri/target -name "*.AppImage" -path "*/bundle/appimage/*" | while read AI; do
+            TAR_NAME="$(basename "$AI").tar.gz"
+            echo "Creating: $TAR_NAME from $AI"
+            tar czf "/tmp/$TAR_NAME" -C "$(dirname "$AI")" "$(basename "$AI")"
+            gh release upload "$TAG" "/tmp/$TAR_NAME" --repo "$REPO" --clobber
+          done
+
       # Sign updater archives. tauri-action renames files during upload
       # (e.g. SwitchHosts.app.tar.gz → SwitchHosts_aarch64.app.tar.gz),
       # so we download the UPLOADED archives from the release, sign them,
