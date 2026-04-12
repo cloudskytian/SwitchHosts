@@ -175,6 +175,19 @@ jobs:
           includeUpdaterJson: true
           args: ${{ matrix.args }}
 
+      # Debug: list all files in the bundle output to see if .sig files were generated
+      - name: List bundle output
+        shell: bash
+        run: |
+          echo "=== Bundle output ==="
+          find src-tauri/target -path "*/release/bundle/*" -type f 2>/dev/null | sort || true
+          echo "=== .sig files ==="
+          find src-tauri/target -name "*.sig" -type f 2>/dev/null || echo "No .sig files found"
+          echo "=== .nsis.zip files ==="
+          find src-tauri/target -name "*.nsis.zip*" -type f 2>/dev/null || echo "No .nsis.zip files found"
+          echo "=== .AppImage.tar.gz files ==="
+          find src-tauri/target -name "*.AppImage.tar.gz*" -type f 2>/dev/null || echo "No .AppImage.tar.gz files found"
+
       # Rename release assets to the project's convention:
       #   SwitchHosts-{version}-{platform}-{arch}.{ext}
       # Uses the GitHub API PATCH endpoint to rename in place (no
