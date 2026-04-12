@@ -241,17 +241,15 @@ fn geometry_is_visible_on_monitors(monitors: &[Monitor], geom: &WindowGeometry) 
 /// `Accessory` (no Dock icon, tray-only). Safe to call at runtime
 /// because P2.B installed a tray icon as a permanent way to summon
 /// the window back.
-pub fn apply_dock_icon_policy<R: Runtime>(_app: &AppHandle<R>, _hide: bool) {
-    #[cfg(target_os = "macos")]
-    {
-        let policy = if _hide {
-            tauri::ActivationPolicy::Accessory
-        } else {
-            tauri::ActivationPolicy::Regular
-        };
-        if let Err(e) = _app.set_activation_policy(policy) {
-            log::warn!("failed to set activation policy: {e}");
-        }
+#[cfg(target_os = "macos")]
+pub fn apply_dock_icon_policy<R: Runtime>(app: &AppHandle<R>, hide: bool) {
+    let policy = if hide {
+        tauri::ActivationPolicy::Accessory
+    } else {
+        tauri::ActivationPolicy::Regular
+    };
+    if let Err(e) = app.set_activation_policy(policy) {
+        log::warn!("failed to set activation policy: {e}");
     }
 }
 

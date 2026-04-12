@@ -68,9 +68,13 @@ jobs:
           - platform: ubuntu-latest
             args: ''
             rust_targets: ''
-          # Windows x64
+          # Windows x64 — NSIS only; MSI requires numeric-only
+          # pre-release identifiers (e.g. 5.0.0-7 ok, 5.0.0-beta.7 not)
+          # which conflicts with semver conventions. NSIS is the standard
+          # user-facing Windows installer; MSI can be added back for
+          # stable releases if enterprise deployment needs it.
           - platform: windows-latest
-            args: ''
+            args: --bundles nsis
             rust_targets: ''
 
     runs-on: ${{ matrix.platform }}

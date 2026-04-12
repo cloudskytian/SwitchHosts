@@ -145,16 +145,12 @@ fn build_edit_menu<R: Runtime>(app: &AppHandle<R>) -> Result<Submenu<R>, tauri::
 // ---- View ------------------------------------------------------------------
 
 fn build_view_menu<R: Runtime>(app: &AppHandle<R>) -> Result<Submenu<R>, tauri::Error> {
-    let mut builder = SubmenuBuilder::new(app, "View");
+    let builder = SubmenuBuilder::new(app, "View");
 
-    // macOS keeps Reload + sep; Windows/Linux strips them (Electron
-    // `template[2].submenu.splice(0, 4)` in the win32/linux branch).
     #[cfg(target_os = "macos")]
-    {
-        builder = builder
-            .item(&PredefinedMenuItem::fullscreen(app, None)?)
-            .separator();
-    }
+    let builder = builder
+        .item(&PredefinedMenuItem::fullscreen(app, None)?)
+        .separator();
 
     builder
         .item(&PredefinedMenuItem::minimize(app, None)?)

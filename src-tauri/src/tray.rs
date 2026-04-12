@@ -39,6 +39,7 @@ const TRAY_WINDOW_HEIGHT: f64 = 600.0;
 
 pub const MENU_ID_SHOW_MAIN: &str = "tray-show-main";
 pub const MENU_ID_VERSION: &str = "tray-version";
+#[cfg(target_os = "macos")]
 pub const MENU_ID_TOGGLE_DOCK: &str = "tray-toggle-dock";
 pub const MENU_ID_QUIT: &str = "tray-quit";
 
@@ -123,13 +124,13 @@ fn build_menu<R: Runtime>(app: &AppHandle<R>) -> Result<Menu<R>, tauri::Error> {
         .build(app)?;
     let quit = MenuItemBuilder::with_id(MENU_ID_QUIT, "Quit").build(app)?;
 
-    let mut menu_builder = MenuBuilder::new(app)
+    let menu_builder = MenuBuilder::new(app)
         .item(&show_main)
         .item(&version)
         .separator();
 
     #[cfg(target_os = "macos")]
-    {
+    let menu_builder = {
         let hide_dock = read_hide_dock_icon(app);
         let label = if hide_dock {
             "Show Dock Icon"
@@ -137,8 +138,8 @@ fn build_menu<R: Runtime>(app: &AppHandle<R>) -> Result<Menu<R>, tauri::Error> {
             "Hide Dock Icon"
         };
         let toggle = MenuItemBuilder::with_id(MENU_ID_TOGGLE_DOCK, label).build(app)?;
-        menu_builder = menu_builder.item(&toggle).separator();
-    }
+        menu_builder.item(&toggle).separator()
+    };
 
     menu_builder.item(&quit).build()
 }
@@ -216,7 +217,8 @@ fn toggle_dock_icon<R: Runtime>(app: &AppHandle<R>) {
 
 /// Rebuild and reattach the tray menu. Cheap — only a few items.
 /// Called whenever an item label depends on config that just changed
-/// (currently just `hide_dock_icon`).
+/// (currently just `hide_dock_icon` on macOS).
+#[cfg(target_os = "macos")]
 pub fn refresh_menu<R: Runtime>(app: &AppHandle<R>) {
     let Some(tray) = app.tray_by_id(TRAY_ID) else {
         return;
