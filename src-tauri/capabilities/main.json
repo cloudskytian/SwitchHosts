@@ -3,5 +3,5 @@
   "identifier": "main-window",
   "description": "Capabilities for the main window: core defaults plus the dialog plugin for import/export file pickers.",
   "windows": ["main"],
-  "permissions": ["core:default", "dialog:default"]
+  "permissions": ["core:default", "dialog:default", "updater:default"]
 }

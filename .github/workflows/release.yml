@@ -1,0 +1,145 @@
+# SwitchHosts v5 (Tauri) release workflow.
+#
+# Triggered by pushing a tag like `v5.0.0` or manually via
+# workflow_dispatch. Builds the Tauri app for macOS (arm64 + x86_64),
+# Windows (x64), and Linux (x64), then uploads everything to a GitHub
+# Release and generates an updater manifest (`latest.json`).
+#
+# ── Required GitHub Secrets ──────────────────────────────────────────
+#
+# macOS signing + notarization:
+#   APPLE_CERTIFICATE            base64-encoded .p12 Developer ID cert
+#   APPLE_CERTIFICATE_PASSWORD   password for the .p12
+#   APPLE_ID                     Apple ID email (for notarization)
+#   APPLE_PASSWORD               app-specific password
+#   APPLE_TEAM_ID                J5J6USUX2F
+#
+# Tauri updater signing:
+#   TAURI_SIGNING_PRIVATE_KEY          content of the .key file
+#   TAURI_SIGNING_PRIVATE_KEY_PASSWORD password (if set during keygen)
+#
+# ── First-time setup ────────────────────────────────────────────────
+#
+# 1. Generate the updater key pair (run once, locally):
+#      npx tauri signer generate -w ~/.tauri/switchhosts.key
+#    Copy the PUBLIC key into tauri.conf.json > plugins > updater > pubkey.
+#    Copy the file content of ~/.tauri/switchhosts.key into the
+#    TAURI_SIGNING_PRIVATE_KEY GitHub secret.
+#
+# 2. Export your Developer ID certificate from Keychain Access as a
+#    .p12 file with a password, then:
+#      base64 -i cert.p12 | pbcopy
+#    Paste into APPLE_CERTIFICATE. Set APPLE_CERTIFICATE_PASSWORD.
+#
+# 3. Generate an app-specific password at https://appleid.apple.com
+#    and store it in APPLE_PASSWORD. Set APPLE_ID to your Apple ID.
+#    Set APPLE_TEAM_ID to J5J6USUX2F.
+# ─────────────────────────────────────────────────────────────────────
+
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g. v5.0.0). Leave empty for a dry-run build without publishing.'
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-latest       # Apple Silicon
+            args: --target aarch64-apple-darwin
+            rust_target: aarch64-apple-darwin
+          - platform: macos-13           # Intel (last x86_64 runner)
+            args: --target x86_64-apple-darwin
+            rust_target: x86_64-apple-darwin
+          - platform: ubuntu-22.04
+            args: ''
+            rust_target: ''
+          - platform: windows-latest
+            args: ''
+            rust_target: ''
+
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust_target }}
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+
+      # Linux system dependencies for Tauri 2
+      - name: Install Linux deps
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      # Determine the tag name for the release. When triggered by a
+      # tag push, use the tag. For workflow_dispatch, use the input
+      # (or skip publishing if empty).
+      - name: Resolve tag
+        id: tag
+        shell: bash
+        run: |
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            echo "name=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          elif [ -n "${{ github.event.inputs.tag }}" ]; then
+            echo "name=${{ github.event.inputs.tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build and release (Tauri)
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # macOS signing
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: "Developer ID Application: Hangzhou Tongming Technology Company Limited (J5J6USUX2F)"
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: J5J6USUX2F
+          # Tauri updater signing
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tagName: ${{ steps.tag.outputs.name }}
+          releaseName: "SwitchHosts ${{ steps.tag.outputs.name }}"
+          releaseBody: "See the assets below to download and install this version."
+          releaseDraft: true
+          prerelease: false
+          includeUpdaterJson: true
+          args: ${{ matrix.args }}
