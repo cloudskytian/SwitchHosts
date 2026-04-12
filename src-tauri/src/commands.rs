@@ -871,12 +871,18 @@ fn refresh_tray_title<R: Runtime>(
 }
 
 #[tauri::command]
-pub async fn open_url(_args: Args) -> Value {
+pub async fn open_url(args: Args) -> Value {
+    if let Some(url) = args.first().and_then(Value::as_str) {
+        let _ = open::that(url);
+    }
     Value::Null
 }
 
 #[tauri::command]
-pub async fn show_item_in_folder(_args: Args) -> Value {
+pub async fn show_item_in_folder(args: Args) -> Value {
+    if let Some(path) = args.first().and_then(Value::as_str) {
+        let _ = open::that(path);
+    }
     Value::Null
 }
 

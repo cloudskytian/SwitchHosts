@@ -79,23 +79,47 @@ pub fn run() {
         // keep working without any renderer changes.
         .on_menu_event(|app, event| {
             let id = event.id().as_ref();
-            // Tray menu items are routed to the tray module's
-            // dispatch table; the application menu's Find item
-            // shows the find webview; popup_menu items are forwarded
-            // back to the renderer as same-named Tauri events. Order
-            // matters only because tray / app-menu ids are short and
-            // never collide with the long renderer-generated
-            // `popup_menu_item_*` ids.
+            // Tray menu items go to the tray module.
             if id.starts_with("tray-") {
                 tray::handle_menu_event(app, id);
                 return;
             }
-            if id == app_menu::MENU_ID_FIND {
-                if let Err(e) = find::show_find_window(app) {
-                    log::warn!("failed to show find window: {e}");
+            // Application menu custom items. Items that route to the
+            // renderer as a broadcast use the same `_args` envelope
+            // convention; items that need Rust action (Find, URL open)
+            // are dispatched inline.
+            match id {
+                app_menu::MENU_ID_FIND => {
+                    if let Err(e) = find::show_find_window(app) {
+                        log::warn!("failed to show find window: {e}");
+                    }
+                    return;
                 }
-                return;
+                app_menu::MENU_ID_ABOUT
+                | app_menu::MENU_ID_NEW
+                | app_menu::MENU_ID_PREFERENCES
+                | app_menu::MENU_ID_COMMENT => {
+                    let event_name = match id {
+                        app_menu::MENU_ID_ABOUT => "show_about",
+                        app_menu::MENU_ID_NEW => "add_new",
+                        app_menu::MENU_ID_PREFERENCES => "show_preferences",
+                        app_menu::MENU_ID_COMMENT => "toggle_comment",
+                        _ => unreachable!(),
+                    };
+                    let _ = app.emit(event_name, json!({ "_args": [] }));
+                    return;
+                }
+                app_menu::MENU_ID_FEEDBACK => {
+                    let _ = open::that(app_menu::FEEDBACK_URL);
+                    return;
+                }
+                app_menu::MENU_ID_HOMEPAGE => {
+                    let _ = open::that(app_menu::HOMEPAGE_URL);
+                    return;
+                }
+                _ => {}
             }
+            // Renderer-generated popup menu items.
             if id.starts_with("popup_menu_item_") {
                 let _ = app.emit(id, json!({ "_args": [] }));
             }
