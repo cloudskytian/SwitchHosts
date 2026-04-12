@@ -45,10 +45,7 @@ pub const MENU_ID_QUIT: &str = "tray-quit";
 const TRAY_MAC_ICON: &[u8] = include_bytes!("../icons/tray-mac.png");
 const TRAY_ICON: &[u8] = include_bytes!("../icons/tray.png");
 
-// TODO: replace with a build-script injection so the tray label tracks
-// `src/version.json`. Hardcoded for P2.B.1; tracked alongside
-// implementation-notes D3 (`tauri.conf.json > version` source of truth).
-const VERSION_LABEL: &str = "v4.3.0 (6140)";
+const VERSION_LABEL: &str = env!("SWH_VERSION_LABEL");
 
 /// Build and install the system tray. Called once from `lib.rs::run`
 /// inside the Builder's setup hook, after the main window exists.

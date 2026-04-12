@@ -203,11 +203,11 @@ Phase 0b 的 [capabilities-and-commands.md](/Users/wu/studio/SwitchHosts/v5plan/
 
 **修复方向**（P2.I）：新增 `vite.render-tauri.config.mts`，输出到 `build-tauri/`。`frontendDist` 指向新目录。
 
-### D3. `tauri.conf.json > version` 硬编码
+### D3. ~~`tauri.conf.json > version` 硬编码~~ ✅ Rust 侧已在 P2.I 解决
 
-[tauri.conf.json](/Users/wu/studio/SwitchHosts/src-tauri/tauri.conf.json) 的 `version` 写死了 `"4.3.0"`。真实版本应该从 [src/version.json](/Users/wu/studio/SwitchHosts/src/version.json)（`[4,3,0,6140]`）的前三段注入。
+[build.rs](/Users/wu/studio/SwitchHosts/src-tauri/build.rs) 在编译期读取 [src/version.json](/Users/wu/studio/SwitchHosts/src/version.json)（`[4,3,0,6140]`），注入 `SWH_VERSION_MAJOR` / `SWH_VERSION_LABEL` / `SWH_VERSION_ARRAY` 等环境变量。`tray.rs::VERSION_LABEL`、`commands.rs::get_basic_data` 和 `http.rs::USER_AGENT` 全部从 `env!()` 取值，不再硬编码。
 
-**修复方向**（P2.I）：写一个 build script 或 npm 脚本，构建期生成 tauri.conf.json，或者用 Tauri 的 `tauri.conf.json` 的环境变量插值。Phase 3 发布链一定要做。
+`tauri.conf.json` 的 `version` 字段仍需手动同步（Tauri 的 conf 不支持环境变量插值）。Phase 3 发布链可以加一个 npm pre-build 脚本来注入。
 
 ### D4. `bundle.targets: "all"` 在缺少打包器的机器上会 fail
 
