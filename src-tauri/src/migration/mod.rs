@@ -69,8 +69,8 @@ pub fn run_if_needed(paths: &V5Paths) -> Result<MigrationOutcome, StorageError> 
         return Ok(MigrationOutcome::FreshInstall);
     }
 
-    eprintln!(
-        "[v5 migration] legacy PotDb detected at {} — migrating to v5 format",
+    log::info!(
+        "legacy PotDb detected at {} — migrating to v5 format",
         paths.root.display()
     );
 
@@ -103,8 +103,8 @@ pub fn run_if_needed(paths: &V5Paths) -> Result<MigrationOutcome, StorageError> 
     let config = match serde_json::from_value::<AppConfig>(snapshot.config.clone()) {
         Ok(c) => c,
         Err(e) => {
-            eprintln!(
-                "[v5 migration] legacy config had unexpected shape ({e}); falling back to defaults for any missing keys."
+            log::warn!(
+                "legacy config had unexpected shape ({e}); falling back to defaults for any missing keys."
             );
             AppConfig::default()
         }
@@ -134,8 +134,8 @@ pub fn run_if_needed(paths: &V5Paths) -> Result<MigrationOutcome, StorageError> 
     archiver::add_if_exists(&mut plan, layout.cfgdb.clone(), "config");
     let archive_dir_name = archiver::execute(&plan)?;
 
-    eprintln!(
-        "[v5 migration] done. wrote {entries_written} entries file(s), archived legacy to v4/{archive_dir_name}/"
+    log::info!(
+        "done. wrote {entries_written} entries file(s), archived legacy to v4/{archive_dir_name}/"
     );
 
     Ok(MigrationOutcome::Applied {

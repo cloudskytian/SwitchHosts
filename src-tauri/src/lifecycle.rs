@@ -250,7 +250,7 @@ pub fn apply_dock_icon_policy<R: Runtime>(_app: &AppHandle<R>, _hide: bool) {
             tauri::ActivationPolicy::Regular
         };
         if let Err(e) = _app.set_activation_policy(policy) {
-            eprintln!("[v5 tray] failed to set activation policy: {e}");
+            log::warn!("failed to set activation policy: {e}");
         }
     }
 }

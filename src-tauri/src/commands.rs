@@ -209,7 +209,7 @@ fn apply_side_effects(
         };
         if on {
             if let Err(e) = http_api::start(app.clone(), only_local) {
-                eprintln!("[v5 http_api] reconfigure failed: {e}");
+                log::warn!("http_api reconfigure failed: {e}");
             }
         } else {
             http_api::stop();
@@ -502,7 +502,7 @@ pub async fn apply_hosts_selection<R: Runtime>(
             return Ok(HostsApplyError::Cancelled.into_renderer_value());
         }
         Err(e) => {
-            eprintln!("[v5 apply] {e}");
+            log::warn!("apply failed: {e}");
             return Ok(e.into_renderer_value());
         }
     };
@@ -527,7 +527,7 @@ pub async fn apply_hosts_selection<R: Runtime>(
                 label: None,
             };
             if let Err(e) = hosts_apply::history::insert(&history_path, item, history_limit) {
-                eprintln!("[v5 apply] failed to write previous content history: {e}");
+                log::warn!("failed to write previous content history: {e}");
             }
         }
 
@@ -539,7 +539,7 @@ pub async fn apply_hosts_selection<R: Runtime>(
             label: None,
         };
         if let Err(e) = hosts_apply::history::insert(&history_path, new_item, history_limit) {
-            eprintln!("[v5 apply] failed to write new content history: {e}");
+            log::warn!("failed to write new content history: {e}");
         }
     }
 
@@ -552,7 +552,7 @@ pub async fn apply_hosts_selection<R: Runtime>(
     // the renderer to call `update_tray_title` — the user expects to
     // see the title flip immediately after an apply.
     if let Err(e) = refresh_tray_title(&app, state.inner()) {
-        eprintln!("[v5 apply] failed to refresh tray title: {e}");
+        log::warn!("failed to refresh tray title: {e}");
     }
 
     // Run `cmd_after_hosts_apply` (if configured) as the current user
@@ -564,14 +564,14 @@ pub async fn apply_hosts_selection<R: Runtime>(
     if let Some(result) = hosts_apply::cmd_runner::run(&cmd_after_apply).await {
         let cmd_history_path = state.paths.histories_dir.join("cmd-after-apply.json");
         if let Err(e) = hosts_apply::cmd_runner::insert(&cmd_history_path, result.clone()) {
-            eprintln!("[v5 cmd-after-apply] failed to persist history: {e}");
+            log::warn!("failed to persist cmd-after-apply history: {e}");
         }
         match serde_json::to_value(&result) {
             Ok(payload) => {
                 let _ = app.emit("cmd_run_result", json!({ "_args": [payload] }));
             }
             Err(e) => {
-                eprintln!("[v5 cmd-after-apply] failed to serialise result: {e}");
+                log::warn!("failed to serialise cmd-after-apply result: {e}");
             }
         }
     }
@@ -917,7 +917,7 @@ pub async fn export_data<R: Runtime>(
 
     let _guard = state.store_lock.lock().expect("store lock poisoned");
     if let Err(e) = import_export::export_to_file(&dest_path, &state.paths) {
-        eprintln!("[v5 export] failed: {e}");
+        log::warn!("export failed: {e}");
         return Ok(Value::Bool(false));
     }
     Ok(Value::String(dest_path.display().to_string()))
@@ -947,7 +947,7 @@ pub async fn import_data<R: Runtime>(
     let bytes = match std::fs::read(&src_path) {
         Ok(b) => b,
         Err(e) => {
-            eprintln!("[v5 import] read failed: {e}");
+            log::warn!("import read failed: {e}");
             return Ok(Value::String(import_export::ERR_PARSE.into()));
         }
     };
@@ -974,7 +974,7 @@ pub async fn import_data_from_url(
     let body = match fetch_url(&client, url).await {
         Ok(b) => b,
         Err(e) => {
-            eprintln!("[v5 import-url] fetch failed: {e}");
+            log::warn!("import-from-url fetch failed: {e}");
             return Ok(Value::String(e));
         }
     };

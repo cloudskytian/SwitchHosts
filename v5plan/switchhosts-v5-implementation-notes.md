@@ -237,15 +237,9 @@ Phase 0b 的 [capabilities-and-commands.md](/Users/wu/studio/SwitchHosts/v5plan/
 
 Electron 版的 tracer 当前也是注释掉的 no-op（参见 [src/main/libs/tracer.ts](/Users/wu/studio/SwitchHosts/src/main/libs/tracer.ts)）。v5 配置项保留但 Rust 侧没有任何实现。**有意识的不做**，未来如果重启上报功能再加。
 
-### D11. 缺少 logger 后端 — 所有 `log::*` 调用被静默丢弃
+### D11. ~~缺少 logger 后端~~ ✅ 已在 P2.I 解决
 
-`Cargo.toml` 只引入了 `log` facade，没有任何后端（`env_logger`、`tauri-plugin-log`、`fern` 等）。结果：[lifecycle.rs](/Users/wu/studio/SwitchHosts/src-tauri/src/lifecycle.rs)、[storage/mod.rs](/Users/wu/studio/SwitchHosts/src-tauri/src/storage/mod.rs)、[migration/mod.rs](/Users/wu/studio/SwitchHosts/src-tauri/src/migration/mod.rs) 等处的 `log::info!` / `log::warn!` 全部被无声丢弃。Phase 2.E.1 烟雾测试时踩到这个坑，临时改用了 `eprintln!`。
-
-**修复方向**（P2.I 或更早）：
-
-- 引入 [`tauri-plugin-log`](https://github.com/tauri-apps/plugins-workspace/tree/v2/plugins/log)，在 `lib.rs::run` 的 Builder 链里 `.plugin(tauri_plugin_log::Builder::default().level(log::LevelFilter::Info).build())`
-- 修复后把 P2.E.1 stub 里的 `eprintln!` 换回 `log::info!`
-- 同时支持文件日志输出，便于 P3 发布后远程问题排查
+引入 `tauri-plugin-log` (v2)，在 `lib.rs::run` 的 Builder 链里用 `.plugin(tauri_plugin_log::Builder::new().level(log::LevelFilter::Info).build())` 初始化。全代码库 28 处 `eprintln!` 批量替换为对应的 `log::info!` / `log::warn!` / `log::error!`（唯一例外：Windows elevation helper 的 `eprintln!` 保留，因为它在 logger 初始化之前运行）。同时获得了 tauri-plugin-log 的文件日志输出能力，便于 P3 发布后远程问题排查。
 
 ### D10. macOS / Linux / Windows 跨平台验收只在 macOS 上做
 

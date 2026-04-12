@@ -152,8 +152,8 @@ pub fn load(path: &Path) -> Result<Vec<CommandRunResult>, StorageError> {
                 .filter_map(|v| serde_json::from_value::<CommandRunResult>(v).ok())
                 .collect()),
             _ => {
-                eprintln!(
-                    "[v5 cmd-history] {} could not be parsed; treating as empty.",
+                log::warn!(
+                    "{} could not be parsed; treating as empty.",
                     path.display()
                 );
                 Ok(Vec::new())

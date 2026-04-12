@@ -101,7 +101,7 @@ pub fn find_in_manifest(
         let content = match entries::read_entry(&state.paths.entries_dir, id) {
             Ok(c) => c,
             Err(e) => {
-                eprintln!("[v5 find] read {id}: {e}");
+                log::warn!("read {id}: {e}");
                 return;
             }
         };
@@ -310,8 +310,8 @@ fn load_json_array<T: for<'de> Deserialize<'de>>(path: &Path) -> Result<Vec<T>, 
         // Tolerate slight schema drift: anything that doesn't decode
         // as the expected list shape resets to empty rather than
         // crashing the find window.
-        eprintln!(
-            "[v5 find-history] {} could not be parsed; treating as empty.",
+        log::warn!(
+            "{} could not be parsed; treating as empty.",
             path.display()
         );
         Ok(Vec::new())

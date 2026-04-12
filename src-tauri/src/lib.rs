@@ -66,6 +66,11 @@ pub fn run() {
             |app, args, cwd| lifecycle::focus_main_on_second_instance(app, args, cwd),
         ))
         .plugin(tauri_plugin_dialog::init())
+        .plugin(
+            tauri_plugin_log::Builder::new()
+                .level(log::LevelFilter::Info)
+                .build(),
+        )
         .manage(state)
         // Popup menu item clicks are routed back to the renderer as Tauri
         // events: the menu item id equals the renderer-generated
@@ -87,7 +92,7 @@ pub fn run() {
             }
             if id == app_menu::MENU_ID_FIND {
                 if let Err(e) = find::show_find_window(app) {
-                    eprintln!("[v5 menu] failed to show find window: {e}");
+                    log::warn!("failed to show find window: {e}");
                 }
                 return;
             }
@@ -117,7 +122,7 @@ pub fn run() {
             // point for the find window today, and `Cmd+F` is the
             // discoverable accelerator from the Electron build.
             if let Err(e) = app_menu::install(&app_handle) {
-                eprintln!("[v5 menu] failed to install app menu: {e}");
+                log::warn!("failed to install app menu: {e}");
             }
 
             // Tray icon must exist before we honour `hide_dock_icon`,
@@ -167,7 +172,7 @@ pub fn run() {
             };
             if http_on {
                 if let Err(e) = http_api::start(app_handle.clone(), only_local) {
-                    eprintln!("[v5 http_api] startup failed: {e}");
+                    log::warn!("http_api startup failed: {e}");
                 }
             }
 

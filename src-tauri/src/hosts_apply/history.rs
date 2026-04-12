@@ -51,8 +51,8 @@ pub fn load(path: &Path) -> Result<Vec<ApplyHistoryItem>, StorageError> {
                 .filter_map(|v| serde_json::from_value::<ApplyHistoryItem>(v).ok())
                 .collect()),
             _ => {
-                eprintln!(
-                    "[v5 apply-history] {} could not be parsed; treating as empty.",
+                log::warn!(
+                    "{} could not be parsed; treating as empty.",
                     path.display()
                 );
                 Ok(Vec::new())

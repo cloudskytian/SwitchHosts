@@ -161,7 +161,7 @@ pub async fn refresh_all<R: Runtime>(
     let manifest = match Manifest::load(&state.paths) {
         Ok(m) => m,
         Err(e) => {
-            eprintln!("[v5 refresh] manifest load failed: {e}");
+            log::warn!("manifest load failed: {e}");
             return Vec::new();
         }
     };
@@ -206,7 +206,7 @@ async fn scan_once<R: Runtime>(app: &AppHandle<R>) {
     let manifest = match Manifest::load(&state.paths) {
         Ok(m) => m,
         Err(e) => {
-            eprintln!("[v5 refresh-cron] manifest load failed: {e}");
+            log::warn!("manifest load failed: {e}");
             return;
         }
     };
@@ -217,7 +217,7 @@ async fn scan_once<R: Runtime>(app: &AppHandle<R>) {
     }
     for id in due_ids {
         if let Err(e) = refresh_one(app, state, &id).await {
-            eprintln!("[v5 refresh-cron] {id}: {e:?}");
+            log::warn!("{id}: {e:?}");
         }
     }
     // Mirror the Electron `broadcast(events.reload_list)` at the end

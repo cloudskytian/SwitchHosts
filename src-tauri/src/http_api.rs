@@ -91,12 +91,12 @@ pub fn start(app: AppHandle<Wry>, only_local: bool) -> Result<(), String> {
     let app_for_task = app.clone();
     let task = tauri::async_runtime::spawn(async move {
         if let Err(e) = serve(app_for_task, addr).await {
-            eprintln!("[v5 http_api] serve error: {e}");
+            log::error!("serve error: {e}");
         }
     });
 
     *guard = Some(ServerHandle { task, only_local });
-    eprintln!("[v5 http_api] listening on http://{addr}");
+    log::info!("listening on http://{addr}");
     Ok(())
 }
 
@@ -105,7 +105,7 @@ pub fn stop() {
     let mut guard = SERVER.lock().expect("http server mutex poisoned");
     if let Some(handle) = guard.take() {
         handle.task.abort();
-        eprintln!("[v5 http_api] stopped");
+        log::info!("stopped");
     }
 }
 
@@ -171,13 +171,13 @@ async fn api_toggle(
     if id.is_empty() {
         return "bad id.";
     }
-    eprintln!("[v5 http_api] toggle: {id}");
+    log::info!("toggle: {id}");
 
     let app_state = state.app.state::<AppState>();
     let manifest = match Manifest::load(&app_state.paths) {
         Ok(m) => m,
         Err(e) => {
-            eprintln!("[v5 http_api] manifest load failed: {e}");
+            log::warn!("manifest load failed: {e}");
             return "not found.";
         }
     };

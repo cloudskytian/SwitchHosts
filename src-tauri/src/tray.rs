@@ -102,7 +102,7 @@ fn handle_left_click<R: Runtime>(
     };
     if mini_enabled {
         if let Err(e) = show_tray_window(app, cursor, icon_rect) {
-            eprintln!("[v5 tray] failed to show mini window: {e}");
+            log::warn!("failed to show mini window: {e}");
         }
     } else {
         show_main_window(app);
@@ -211,7 +211,7 @@ fn toggle_dock_icon<R: Runtime>(app: &AppHandle<R>) {
         cfg.hide_dock_icon
     };
     if let Err(e) = state.persist_config() {
-        eprintln!("[v5 tray] failed to persist hide_dock_icon: {e}");
+        log::warn!("failed to persist hide_dock_icon: {e}");
     }
     lifecycle::apply_dock_icon_policy(app, new_value);
     refresh_menu(app);
@@ -227,11 +227,11 @@ pub fn refresh_menu<R: Runtime>(app: &AppHandle<R>) {
     match build_menu(app) {
         Ok(menu) => {
             if let Err(e) = tray.set_menu(Some(menu)) {
-                eprintln!("[v5 tray] failed to set tray menu: {e}");
+                log::warn!("failed to set tray menu: {e}");
             }
         }
         Err(e) => {
-            eprintln!("[v5 tray] failed to rebuild tray menu: {e}");
+            log::warn!("failed to rebuild tray menu: {e}");
         }
     }
 }
