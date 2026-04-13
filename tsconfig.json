@@ -16,10 +16,7 @@
       "@common/*": [
         "./src/common/*"
       ],
-      "@main/*": [
-        "./src/main/*"
-      ],
-      "@renderer/*": [
+"@renderer/*": [
         "./src/renderer/*"
       ],
       "@src/*": [

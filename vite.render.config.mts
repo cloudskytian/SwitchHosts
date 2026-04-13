@@ -42,7 +42,6 @@ export default defineConfig({
       '@assets': path.resolve(__dirname, 'assets'),
       '@src': path.resolve(__dirname, 'src'),
       '@common': path.resolve(__dirname, 'src', 'common'),
-      '@main': path.resolve(__dirname, 'src', 'main'),
       '@renderer': path.resolve(__dirname, 'src', 'renderer'),
       '@styles': path.resolve(__dirname, 'src', 'renderer', 'styles'),
     },

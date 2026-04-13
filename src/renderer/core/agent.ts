@@ -2,8 +2,8 @@
  * @author: oldj
  * @homepage: https://oldj.net
  *
- * Runtime dispatch between Electron `window._agent` and Tauri 2.
- * Electron path is unchanged. Tauri path routes through invoke/event.
+ * Tauri 2 agent — routes all renderer↔backend communication through
+ * Tauri invoke/event APIs.
  */
 
 import { invoke } from '@tauri-apps/api/core'
@@ -23,8 +23,6 @@ export interface IAgent {
   darkModeToggle: (theme: any) => Promise<void>
   platform: string
 }
-
-const isTauri = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window
 
 // ---- legacy name mapping ---------------------------------------------------
 
@@ -218,9 +216,7 @@ function makeTauriAgent(): IAgent {
 
 // ---- export ----------------------------------------------------------------
 
-export const agent: IAgent = isTauri
-  ? makeTauriAgent()
-  : ((window as any)._agent as IAgent)
+export const agent: IAgent = makeTauriAgent()
 
 export const actions: Actions = new Proxy(
   {},

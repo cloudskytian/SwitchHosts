@@ -21,7 +21,7 @@
 
 Homepage: [https://switchhosts.vercel.app](https://switchhosts.vercel.app)
 
-SwitchHosts is an App for managing hosts file, it is based on [Electron](http://electron.atom.io/), [React](https://facebook.github.io/react/), [Jotai](https://jotai.org/), [Mantine](https://mantine.dev/), etc.
+SwitchHosts is an App for managing hosts file, it is based on [Tauri](https://tauri.app/), [React](https://facebook.github.io/react/), [Jotai](https://jotai.org/), [Mantine](https://mantine.dev/), etc.
 
 ## Screenshot
 
@@ -57,32 +57,28 @@ folder contains various configuration information.
 
 ## Develop and build
 
+### Prerequisites
+
+- [Node.js](https://nodejs.org/)
+- [Rust](https://www.rust-lang.org/tools/install)
+- Tauri system dependencies, see [Tauri Prerequisites](https://v2.tauri.app/start/prerequisites/)
+
 ### Development
 
-- Install [Node.js](https://nodejs.org/)
-- Change to the folder `./`, run `npm install` to install dependented libraries
-- Run `npm run dev` to start the development server
-- Then run `npm run start` to start the app for developing or debuging
+- Run `npm install` to install dependencies
+- Run `npm run tauri:dev` to start the app in development mode
 
 ### Build and package
 
-- It is recommended to use [electron-builder](https://github.com/electron-userland/electron-builder)
-  for packaging
-- Go to the `./` folder
-- Run `npm run build`
-- Run `npm run make`, if everything goes well, the packaged files will be in the `./dist` folder.
-- This command may take several minutes to finish when you run it the first time, as it needs time
-  to download dependent files. You can download the dependencies
-  manually [here](https://github.com/electron/electron/releases),
-  or [Taobao mirror](https://npmmirror.com/mirrors/electron/), then save the files to `~/.electron`
-  . You can check the [Electron Docs](http://electron.atom.io/docs/) for more infomation.
+- Run `npm run tauri:build` to create a production build
+- The packaged files will be in `./src-tauri/target/release/bundle/`
 
 ```bash
-# build
-npm run build
+# development
+npm run tauri:dev
 
-# make
-npm run make # the packed files will be in ./dist
+# production build
+npm run tauri:build
 ```
 
 ## Copyright

@@ -9,7 +9,7 @@ import PreferencePanel from '@renderer/components/Pref'
 import SetWriteMode from '@renderer/components/SetWriteMode'
 import SudoPasswordInput from '@renderer/components/SudoPasswordInput'
 import UpdateDialog from '@renderer/components/UpdateDialog'
-import { actions, agent } from '@renderer/core/agent'
+import { agent } from '@renderer/core/agent'
 import useOnBroadcast from '@renderer/core/useOnBroadcast'
 import useConfigs from '@renderer/models/useConfigs'
 import clsx from 'clsx'
@@ -21,31 +21,15 @@ import styles from './index.module.scss'
 
 export default () => {
   const [loading, setLoading] = useState(true)
-  const { lang, setLocale } = useI18n()
+  const { setLocale } = useI18n()
   const { loadHostsData } = useHostsData()
   const { configs } = useConfigs()
   const [left_width, setLeftWidth] = useState(0)
   const [left_show, setLeftShow] = useState(true)
   const [use_system_window_frame, setSystemFrame] = useState(false)
-  const [show_migration, setShowMigration] = useState(false)
-
-  const migrate = async (do_migrate: boolean) => {
-    if (do_migrate) {
-      await actions.migrateData()
-    } else {
-      setShowMigration(false)
-    }
-    await loadHostsData()
-    setLoading(false)
-  }
-
   const init = async () => {
-    let if_migrate = await actions.migrateCheck()
-    if (if_migrate) {
-      setShowMigration(true)
-      return
-    }
-
+    // v5: migration is handled automatically by the Rust backend on startup.
+    // The renderer only needs to load data.
     await loadHostsData()
     setLoading(false)
   }
@@ -76,12 +60,6 @@ export default () => {
   useOnBroadcast(events.toggle_left_panel, (show: boolean) => setLeftShow(show))
 
   if (loading) {
-    if (show_migration) {
-      setTimeout(() => {
-        migrate(confirm(lang.migrate_confirm)).catch((e) => alert(e.message))
-      }, 200)
-    }
-
     return <Loading />
   }
 
