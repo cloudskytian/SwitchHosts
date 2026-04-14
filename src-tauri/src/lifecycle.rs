@@ -169,7 +169,7 @@ pub fn create_main_window<R: Runtime>(
         .map(|g| geometry_is_visible_on_monitors(&monitors, g))
         .unwrap_or(false);
 
-    let mut builder = WebviewWindowBuilder::new(
+    let builder = WebviewWindowBuilder::new(
         app,
         MAIN_WINDOW_LABEL,
         WebviewUrl::App("/".into()),
@@ -177,6 +177,14 @@ pub fn create_main_window<R: Runtime>(
     .title("SwitchHosts")
     .min_inner_size(300.0, 200.0)
     .resizable(true);
+
+    #[cfg(target_os = "macos")]
+    let mut builder = builder
+        .title_bar_style(tauri::TitleBarStyle::Overlay)
+        .hidden_title(true)
+        .traffic_light_position(tauri::LogicalPosition::new(12.0, 22.0));
+    #[cfg(not(target_os = "macos"))]
+    let mut builder = builder.decorations(false).shadow(true);
 
     if saved_on_screen {
         let geom = saved.as_ref().unwrap();
