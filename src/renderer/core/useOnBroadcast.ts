@@ -1,6 +1,7 @@
-import { EventHandler } from '@main/preload'
 import { agent } from '@renderer/core/agent'
 import { useEffect } from 'react'
+
+type EventHandler = (...args: any[]) => void
 
 const useOnBroadcast = (
   event: string,

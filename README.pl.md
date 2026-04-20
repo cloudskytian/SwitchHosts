@@ -20,7 +20,7 @@
 
 Strona główna: [https://switchhosts.vercel.app](https://switchhosts.vercel.app)
 
-SwitchHosts to aplikacja do zarządzania plikiem hosts, zbudowana na bazie [Electron](http://electron.atom.io/), [React](https://facebook.github.io/react/), [Jotai](https://jotai.org/), [Mantine](https://mantine.dev/) i innych.
+SwitchHosts to aplikacja do zarządzania plikiem hosts, zbudowana na bazie [Tauri](https://tauri.app/), [React](https://facebook.github.io/react/), [Jotai](https://jotai.org/), [Mantine](https://mantine.dev/) i innych.
 
 ## Zrzut ekranu
 
@@ -52,27 +52,28 @@ SwitchHosts przechowuje dane w `~/.SwitchHosts` (lub folder `.SwitchHosts` w śc
 
 ## Tworzenie i budowanie
 
+### Wymagania wstępne
+
+- [Node.js](https://nodejs.org/)
+- [Rust](https://www.rust-lang.org/tools/install)
+- Zależności systemowe Tauri, zobacz [Wymagania Tauri](https://v2.tauri.app/start/prerequisites/)
+
 ### Tworzenie
 
-- Zainstaluj [Node.js](https://nodejs.org/)
-- Przejdź do folderu `./`, uruchom `npm install` aby zainstalować biblioteki zależności
-- Uruchom `npm run dev` aby uruchomić serwer deweloperski
-- Następnie uruchom `npm run start` aby uruchomić aplikację do tworzenia lub debugowania
+- Uruchom `npm install` aby zainstalować zależności
+- Uruchom `npm run tauri:dev` aby uruchomić aplikację w trybie deweloperskim
 
 ### Budowanie i pakowanie
 
-- Zaleca się użycie [electron-builder](https://github.com/electron-userland/electron-builder) do budowania
-- Przejdź do folderu `./`
-- Uruchom `npm run build`
-- Uruchom `npm run make`, jeśli wszystko pójdzie dobrze, spakowane pliki będą w folderze `./dist`.
-- Ta komenda może zająć kilka minut gdy uruchamiasz ją po raz pierwszy, ponieważ potrzebuje czasu na pobranie plików zależności. Możesz pobrać zależności ręcznie [tutaj](https://github.com/electron/electron/releases), lub [lustro Taobao](https://npmmirror.com/mirrors/electron/), a następnie zapisz pliki do `~/.electron`. Możesz sprawdzić [Dokumentację Electron](http://electron.atom.io/docs/) aby uzyskać więcej informacji.
+- Uruchom `npm run tauri:build` aby utworzyć wersję produkcyjną
+- Spakowane pliki będą w `./src-tauri/target/release/bundle/`
 
 ```bash
-# budowanie
-npm run build
+# tworzenie
+npm run tauri:dev
 
-# pakowanie
-npm run make # spakowane pliki będą w ./dist
+# budowanie produkcyjne
+npm run tauri:build
 ```
 
 ## Prawa autorskie

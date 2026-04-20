@@ -66,7 +66,7 @@ const HostsEditor = () => {
     { wait: 1000 },
   )
 
-  /** Toggle contenteditable between 'plaintext-only' and 'false' (Chromium/Electron only). */
+  /** Toggle contenteditable between 'plaintext-only' and 'false' (Chromium-based only). */
   const setEditorReadOnly = (readOnly: boolean) => {
     const editor = ref_editor.current
     if (!editor) return

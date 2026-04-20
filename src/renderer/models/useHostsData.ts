@@ -4,7 +4,7 @@
  */
 
 import version from '@/version.json'
-import { IHostsBasicData, IHostsListObject, VersionType } from '@common/data'
+import { IHostsBasicData, IHostsListObject } from '@common/data'
 import { actions } from '@renderer/core/agent'
 import { current_hosts_atom, hosts_data_atom } from '@renderer/stores/hosts_data'
 import { useAtom } from 'jotai'
@@ -23,7 +23,7 @@ export default function useHostsData() {
     let data: IHostsBasicData = {
       list,
       trashcan: hosts_data.trashcan,
-      version: version as VersionType,
+      version,
     }
 
     setHostsData(data)

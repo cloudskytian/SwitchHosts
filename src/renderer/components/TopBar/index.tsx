@@ -16,9 +16,12 @@ import {
   IconHistory,
   IconLayoutSidebarLeftCollapse,
   IconLayoutSidebarLeftExpand,
+  IconMinus,
   IconPlus,
+  IconSquare,
   IconX,
 } from '@tabler/icons-react'
+import { getCurrentWindow } from '@tauri-apps/api/window'
 import { useEffect, useState } from 'react'
 import styles from './index.module.scss'
 
@@ -37,9 +40,7 @@ export default (props: IProps) => {
   const show_toggle_switch =
     !show_left_panel && current_hosts && !isHostsInTrashcan(current_hosts.id)
   const show_history = !current_hosts
-  const show_close_button =
-    (agent.platform === 'linux' && !use_system_window_frame) ||
-    (agent.platform !== 'darwin' && agent.platform !== 'linux')
+  const show_window_controls = agent.platform !== 'darwin'
 
   useEffect(() => {
     setIsOn(!!current_hosts?.on)
@@ -56,7 +57,7 @@ export default (props: IProps) => {
   )
 
   return (
-    <div className={styles.root}>
+    <div className={styles.root} data-tauri-drag-region>
       <Flex align="center" justify="center" gap={8}>
         <ActionIcon
           aria-label="Toggle sidebar"
@@ -82,7 +83,7 @@ export default (props: IProps) => {
         </ActionIcon>
       </Flex>
 
-      <Box className={styles.title_wrapper}>
+      <Box className={styles.title_wrapper} data-tauri-drag-region>
         <Flex className={styles.title} gap={8} align="center" justify="center">
           {current_hosts ? (
             <>
@@ -130,15 +131,33 @@ export default (props: IProps) => {
 
         <ConfigMenu iconSize={iconSize} />
 
-        {show_close_button ? (
-          <ActionIcon
-            aria-label="Close window"
-            variant="subtle"
-            color="gray"
-            onClick={() => actions.closeMainWindow()}
-          >
-            <IconX size={iconSize} />
-          </ActionIcon>
+        {show_window_controls ? (
+          <>
+            <ActionIcon
+              aria-label="Minimize"
+              variant="subtle"
+              color="gray"
+              onClick={() => getCurrentWindow().minimize()}
+            >
+              <IconMinus size={iconSize} />
+            </ActionIcon>
+            <ActionIcon
+              aria-label="Maximize"
+              variant="subtle"
+              color="gray"
+              onClick={() => getCurrentWindow().toggleMaximize()}
+            >
+              <IconSquare size={iconSize - 4} />
+            </ActionIcon>
+            <ActionIcon
+              aria-label="Close window"
+              variant="subtle"
+              color="gray"
+              onClick={() => actions.closeMainWindow()}
+            >
+              <IconX size={iconSize} />
+            </ActionIcon>
+          </>
         ) : null}
       </Flex>
     </div>

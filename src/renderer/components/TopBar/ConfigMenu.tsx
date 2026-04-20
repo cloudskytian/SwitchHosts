@@ -14,7 +14,6 @@ import useI18n from '@renderer/models/useI18n'
 import {
   IconAdjustments,
   IconCloudDownload,
-  IconCode,
   IconDownload,
   IconHome,
   IconInfoCircle,
@@ -156,13 +155,6 @@ const ConfigMenu = (props: IProps) => {
           >
             {lang.preferences}
           </Menu.Item>
-          <Menu.Item
-            leftSection={<IconCode size={iconSize} stroke={strokeWidth} />}
-            onClick={() => actions.cmdToggleDevTools()}
-          >
-            {lang.toggle_developer_tools}
-          </Menu.Item>
-
           <Menu.Divider />
 
           <Menu.Item

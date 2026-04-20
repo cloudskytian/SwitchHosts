@@ -1,0 +1,431 @@
+# SwitchHosts v5 (Tauri) release workflow.
+#
+# Triggered by pushing a tag like `v5.0.0` or manually via
+# workflow_dispatch. Builds the Tauri app for macOS (universal binary),
+# Windows (x64), and Linux (x64), then uploads everything to a GitHub
+# Release and generates an updater manifest (`latest.json`).
+#
+# ── Required GitHub Secrets ──────────────────────────────────────────
+#
+# macOS signing + notarization:
+#   APPLE_CERTIFICATE            base64-encoded .p12 Developer ID cert
+#   APPLE_CERTIFICATE_PASSWORD   password for the .p12
+#   APPLE_ID                     Apple ID email (for notarization)
+#   APPLE_PASSWORD               app-specific password
+#   APPLE_TEAM_ID                J5J6USUX2F
+#
+# Tauri updater signing:
+#   TAURI_SIGNING_PRIVATE_KEY          content of the .key file
+#   TAURI_SIGNING_PRIVATE_KEY_PASSWORD password (if set during keygen)
+#
+# ── First-time setup ────────────────────────────────────────────────
+#
+# 1. Generate the updater key pair (run once, locally):
+#      npx tauri signer generate -w ~/.tauri/switchhosts.key
+#    Copy the PUBLIC key into tauri.conf.json > plugins > updater > pubkey.
+#    Copy the file content of ~/.tauri/switchhosts.key into the
+#    TAURI_SIGNING_PRIVATE_KEY GitHub secret.
+#
+# 2. Export your Developer ID certificate from Keychain Access as a
+#    .p12 file with a password, then:
+#      base64 -i cert.p12 | pbcopy
+#    Paste into APPLE_CERTIFICATE. Set APPLE_CERTIFICATE_PASSWORD.
+#
+# 3. Generate an app-specific password at https://appleid.apple.com
+#    and store it in APPLE_PASSWORD. Set APPLE_ID to your Apple ID.
+#    Set APPLE_TEAM_ID to J5J6USUX2F.
+# ─────────────────────────────────────────────────────────────────────
+
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g. v5.0.0). Leave empty for a dry-run build without publishing.'
+        required: false
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # ── macOS ──────────────────────────────────────────────
+          - platform: macos-latest
+            args: --target universal-apple-darwin
+            rust_targets: aarch64-apple-darwin,x86_64-apple-darwin
+          - platform: macos-latest
+            args: --target aarch64-apple-darwin
+            rust_targets: aarch64-apple-darwin
+          - platform: macos-latest
+            args: --target x86_64-apple-darwin
+            rust_targets: x86_64-apple-darwin
+          # ── Linux ──────────────────────────────────────────────
+          - platform: ubuntu-latest
+            args: ''
+            rust_targets: ''
+          - platform: ubuntu-24.04-arm
+            args: ''
+            rust_targets: ''
+          # ── Windows (NSIS only — MSI rejects non-numeric pre-release) ──
+          - platform: windows-latest
+            args: --bundles nsis
+            rust_targets: ''
+          - platform: windows-latest
+            args: --target i686-pc-windows-msvc --bundles nsis
+            rust_targets: i686-pc-windows-msvc
+          - platform: windows-latest
+            args: --target aarch64-pc-windows-msvc --bundles nsis
+            rust_targets: aarch64-pc-windows-msvc
+
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust_targets }}
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+
+      # Linux system dependencies for Tauri 2
+      - name: Install Linux deps
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      # Determine the tag name for the release. When triggered by a
+      # tag push, use the tag. For workflow_dispatch, use the input
+      # (or skip publishing if empty).
+      - name: Resolve tag
+        id: tag
+        shell: bash
+        run: |
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            echo "name=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          elif [ -n "${{ github.event.inputs.tag }}" ]; then
+            echo "name=${{ github.event.inputs.tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build and release (Tauri)
+        id: tauri
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # macOS signing
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: "Developer ID Application: Hangzhou Tongming Technology Company Limited (J5J6USUX2F)"
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: J5J6USUX2F
+          # Tauri updater signing
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tagName: ${{ steps.tag.outputs.name }}
+          releaseName: "SwitchHosts ${{ steps.tag.outputs.name }}"
+          releaseBody: "See the assets below to download and install this version."
+          releaseDraft: true
+          prerelease: false
+          includeUpdaterJson: true
+          args: ${{ matrix.args }}
+
+      # Create updater archives for Windows and Linux.
+      # tauri-action only creates .app.tar.gz for macOS. Windows and
+      # Linux updater archives must be built manually.
+      - name: Create updater archives (Windows)
+        if: runner.os == 'Windows' && steps.tag.outputs.name != ''
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.tag.outputs.name }}"
+          REPO="${{ github.repository }}"
+          # Find all NSIS setup executables
+          find src-tauri/target -name "*-setup.exe" -path "*/bundle/nsis/*" | while read EXE; do
+            BASE=$(basename "$EXE" .exe)
+            ZIP_NAME="${BASE}.nsis.zip"
+            echo "Creating: $ZIP_NAME from $EXE"
+            (cd "$(dirname "$EXE")" && powershell -Command "Compress-Archive -Path '$(basename "$EXE")' -DestinationPath '$ZIP_NAME' -Force")
+            gh release upload "$TAG" "$(dirname "$EXE")/$ZIP_NAME" --repo "$REPO" --clobber
+          done
+
+      - name: Create updater archives (Linux)
+        if: runner.os == 'Linux' && steps.tag.outputs.name != ''
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.tag.outputs.name }}"
+          REPO="${{ github.repository }}"
+          # Find all AppImage files
+          find src-tauri/target -name "*.AppImage" -path "*/bundle/appimage/*" | while read AI; do
+            TAR_NAME="$(basename "$AI").tar.gz"
+            echo "Creating: $TAR_NAME from $AI"
+            tar czf "/tmp/$TAR_NAME" -C "$(dirname "$AI")" "$(basename "$AI")"
+            gh release upload "$TAG" "/tmp/$TAR_NAME" --repo "$REPO" --clobber
+          done
+
+      # Sign updater archives. tauri-action renames files during upload
+      # (e.g. SwitchHosts.app.tar.gz → SwitchHosts_aarch64.app.tar.gz),
+      # so we download the UPLOADED archives from the release, sign them,
+      # and upload the .sig files with matching names.
+      - name: Sign updater archives
+        if: steps.tag.outputs.name != ''
+        shell: bash
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.tag.outputs.name }}"
+          RELEASE_ID="${{ steps.tauri.outputs.releaseId }}"
+          REPO="${{ github.repository }}"
+          if [ -z "$RELEASE_ID" ] || [ -z "$TAURI_SIGNING_PRIVATE_KEY" ]; then
+            echo "Skipping signing (no release ID or no signing key)"
+            exit 0
+          fi
+
+          mkdir -p /tmp/updater-sign
+
+          # Find updater archives (.app.tar.gz / .nsis.zip / .AppImage.tar.gz) in the release
+          gh api "repos/$REPO/releases/$RELEASE_ID/assets" --paginate \
+            --jq '.[] | select(.name | test("\\.(app\\.tar\\.gz|nsis\\.zip|AppImage\\.tar\\.gz)$")) | "\(.id)\t\(.name)"' | \
+          while IFS=$'\t' read -r AID NAME; do
+            echo "Downloading: $NAME"
+            gh api -H "Accept: application/octet-stream" \
+              "repos/$REPO/releases/assets/$AID" > "/tmp/updater-sign/$NAME"
+
+            echo "Signing: $NAME"
+            npx tauri signer sign "/tmp/updater-sign/$NAME"
+
+            SIG="/tmp/updater-sign/${NAME}.sig"
+            if [ -f "$SIG" ]; then
+              echo "Uploading: ${NAME}.sig"
+              gh release upload "$TAG" "$SIG" --repo "$REPO" --clobber
+            else
+              echo "::warning::Signature not created for $NAME"
+            fi
+          done
+
+      # Rename release assets to the project's convention:
+      #   SwitchHosts-{version}-{platform}-{arch}.{ext}
+      # Uses the GitHub API PATCH endpoint to rename in place (no
+      # re-download / re-upload needed).
+      - name: Rename release assets
+        if: steps.tag.outputs.name != ''
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.tag.outputs.name }}"
+          # Read version from package.json (the source of truth) rather
+          # than deriving from the git tag — the tag may have a pre-release
+          # suffix that doesn't match the bundle file names when the user
+          # forgot to `npm version` before tagging.
+          VERSION=$(node -p "require('./package.json').version")
+          REPO="${{ github.repository }}"
+
+          case "${{ runner.os }}" in
+            macOS)   PLATFORM="mac" ;;
+            Linux)   PLATFORM="linux" ;;
+            Windows) PLATFORM="windows" ;;
+          esac
+
+          RELEASE_ID="${{ steps.tauri.outputs.releaseId }}"
+          if [ -z "$RELEASE_ID" ]; then
+            echo "No release ID from tauri-action — skipping rename"
+            exit 0
+          fi
+
+          gh api "repos/$REPO/releases/$RELEASE_ID/assets" --paginate \
+            --jq '.[] | "\(.id)\t\(.name)"' | while IFS=$'\t' read -r AID NAME; do
+
+            # Only touch SwitchHosts artifacts
+            case "$NAME" in SwitchHosts*) ;; *) continue ;; esac
+
+            # Skip updater-internal files — their names are referenced
+            # by latest.json URLs, so renaming them would break the
+            # auto-update pipeline. Users never download these directly.
+            case "$NAME" in
+              *.app.tar.gz|*.app.tar.gz.sig) continue ;;
+              *.nsis.zip|*.nsis.zip.sig)     continue ;;
+              *.AppImage.tar.gz|*.AppImage.tar.gz.sig) continue ;;
+              latest.json) continue ;;
+            esac
+
+            NEW="$NAME"
+
+            # 1. Main pattern: SwitchHosts_{ver}_{arch}… → SwitchHosts-{ver}-{platform}-{arch}…
+            NEW=$(echo "$NEW" | sed "s|^SwitchHosts_${VERSION}_|SwitchHosts-${VERSION}-${PLATFORM}-|")
+
+            # 2. RPM uses its own format: SwitchHosts-{ver}-1.{arch}.rpm → normalise
+            NEW=$(echo "$NEW" | sed "s|^SwitchHosts-${VERSION}-1\.\([a-zA-Z0-9_]*\)\.rpm|SwitchHosts-${VERSION}-${PLATFORM}-\1.rpm|")
+
+            # 3. Drop _en-US from MSI name
+            NEW=$(echo "$NEW" | sed "s|_en-US\\.msi|.msi|")
+
+            if [ "$NEW" != "$NAME" ]; then
+              echo "  $NAME → $NEW"
+              gh api -X PATCH "repos/$REPO/releases/assets/$AID" -f name="$NEW" --silent
+            fi
+          done
+
+  # ── Generate latest.json after all platform builds complete ───────
+  updater-manifest:
+    needs: release
+    if: ${{ needs.release.result == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve tag
+        id: tag
+        shell: bash
+        run: |
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            echo "name=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          elif [ -n "${{ github.event.inputs.tag }}" ]; then
+            echo "name=${{ github.event.inputs.tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Generate latest.json
+        if: steps.tag.outputs.name != ''
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.tag.outputs.name }}"
+          VERSION=$(node -p "require('./package.json').version")
+          REPO="${{ github.repository }}"
+
+          # Get release ID from tag (release is a draft, so use list endpoint)
+          RELEASE_ID=$(gh api "repos/$REPO/releases" --paginate \
+            --jq ".[] | select(.tag_name == \"$TAG\") | .id" | head -1)
+          if [ -z "$RELEASE_ID" ]; then
+            echo "::warning::No release found for tag $TAG"
+            exit 0
+          fi
+
+          DOWNLOAD_BASE="https://github.com/$REPO/releases/download/$TAG"
+
+          # Build platform entries dynamically from actual .sig assets.
+          # For each .sig file, derive the archive name and the Tauri
+          # platform key from the filename pattern.
+          PLATFORMS="{}"
+
+          gh api "repos/$REPO/releases/$RELEASE_ID/assets" --paginate \
+            --jq '.[] | select(.name | endswith(".sig")) | "\(.id)\t\(.name)"' | \
+          while IFS=$'\t' read -r AID SIG_NAME; do
+            # Download sig content
+            SIG_CONTENT=$(gh api -H "Accept: application/octet-stream" \
+              "repos/$REPO/releases/assets/$AID" 2>/dev/null)
+            [ -z "$SIG_CONTENT" ] && continue
+
+            # Derive archive name (strip .sig suffix)
+            ARCHIVE_NAME="${SIG_NAME%.sig}"
+
+            # Determine Tauri platform key from filename
+            PLATFORM_KEY=""
+            case "$ARCHIVE_NAME" in
+              *_universal.app.tar.gz)  PLATFORM_KEY="darwin-universal" ;;
+              *_aarch64.app.tar.gz)    PLATFORM_KEY="darwin-aarch64" ;;
+              *_x64.app.tar.gz)        PLATFORM_KEY="darwin-x86_64" ;;
+              *_x64-setup.nsis.zip)    PLATFORM_KEY="windows-x86_64" ;;
+              *_x86-setup.nsis.zip)    PLATFORM_KEY="windows-i686" ;;
+              *_arm64-setup.nsis.zip)  PLATFORM_KEY="windows-aarch64" ;;
+              *_amd64.AppImage.tar.gz) PLATFORM_KEY="linux-x86_64" ;;
+              *_aarch64.AppImage.tar.gz) PLATFORM_KEY="linux-aarch64" ;;
+            esac
+            [ -z "$PLATFORM_KEY" ] && continue
+
+            echo "  $PLATFORM_KEY → $ARCHIVE_NAME"
+            PLATFORMS=$(echo "$PLATFORMS" | jq \
+              --arg key "$PLATFORM_KEY" \
+              --arg url "$DOWNLOAD_BASE/$ARCHIVE_NAME" \
+              --arg sig "$SIG_CONTENT" \
+              '. + {($key): {"url": $url, "signature": $sig}}')
+          done
+
+          # The while loop runs in a subshell (pipe), so $PLATFORMS
+          # changes are lost. Re-read from the actual assets:
+          PLATFORMS="{}"
+          for entry in $(gh api "repos/$REPO/releases/$RELEASE_ID/assets" --paginate \
+            --jq '.[] | select(.name | endswith(".sig")) | .id'); do
+
+            ASSET=$(gh api "repos/$REPO/releases/assets/$entry")
+            SIG_NAME=$(echo "$ASSET" | jq -r '.name')
+            SIG_CONTENT=$(gh api -H "Accept: application/octet-stream" \
+              "repos/$REPO/releases/assets/$entry" 2>/dev/null)
+            [ -z "$SIG_CONTENT" ] && continue
+
+            ARCHIVE_NAME="${SIG_NAME%.sig}"
+            PLATFORM_KEY=""
+            case "$ARCHIVE_NAME" in
+              *_universal.app.tar.gz)    PLATFORM_KEY="darwin-universal" ;;
+              *_aarch64.app.tar.gz)      PLATFORM_KEY="darwin-aarch64" ;;
+              *_x64.app.tar.gz)          PLATFORM_KEY="darwin-x86_64" ;;
+              *_x64-setup.nsis.zip)      PLATFORM_KEY="windows-x86_64" ;;
+              *_x86-setup.nsis.zip)      PLATFORM_KEY="windows-i686" ;;
+              *_arm64-setup.nsis.zip)    PLATFORM_KEY="windows-aarch64" ;;
+              *_amd64.AppImage.tar.gz)   PLATFORM_KEY="linux-x86_64" ;;
+              *_aarch64.AppImage.tar.gz) PLATFORM_KEY="linux-aarch64" ;;
+            esac
+            [ -z "$PLATFORM_KEY" ] && continue
+
+            echo "  $PLATFORM_KEY → $ARCHIVE_NAME"
+            PLATFORMS=$(echo "$PLATFORMS" | jq \
+              --arg key "$PLATFORM_KEY" \
+              --arg url "$DOWNLOAD_BASE/$ARCHIVE_NAME" \
+              --arg sig "$SIG_CONTENT" \
+              '. + {($key): {"url": $url, "signature": $sig}}')
+          done
+
+          NOW=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          LATEST=$(jq -n \
+            --arg version "$VERSION" \
+            --arg pub_date "$NOW" \
+            --argjson platforms "$PLATFORMS" \
+            '{version: $version, pub_date: $pub_date, platforms: $platforms}')
+
+          echo "$LATEST" | jq .
+          echo "$LATEST" > latest.json
+
+          gh release upload "$TAG" latest.json --repo "$REPO" --clobber
+          echo "latest.json uploaded with $(echo "$PLATFORMS" | jq 'keys | length') platform(s)"

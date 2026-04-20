@@ -4,7 +4,7 @@
  */
 
 import { LocaleName } from '@common/i18n'
-import { i18n_atom, lang_atom, locale_atom } from '@renderer/stores/i18n'
+import { i18n_atom, lang_atom, locale_atom, resolveSystemLocale } from '@renderer/stores/i18n'
 import { useAtom } from 'jotai'
 
 export default function useI18n() {
@@ -14,7 +14,7 @@ export default function useI18n() {
 
   return {
     locale,
-    setLocale: (locale?: LocaleName) => setLocale(locale || 'en'),
+    setLocale: (locale?: LocaleName) => setLocale(locale || resolveSystemLocale()),
     i18n,
     lang,
   }
