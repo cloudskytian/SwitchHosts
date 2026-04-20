@@ -15,7 +15,7 @@
 //!
 //! ## On disk (manifest.json)
 //!
-//! camelCase + nested per `v5plan/switchhosts-v5-storage-plan.md`:
+//! camelCase + nested:
 //!
 //! ```text
 //! { id, type, title, on, isSys?, contentFile?,

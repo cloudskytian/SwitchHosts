@@ -108,7 +108,7 @@ function snakeCase(s: string): string {
 function resolveCommandName(action: string): string {
   if (REMOVED.has(action)) {
     throw new Error(
-      `[v5] action "${action}" was removed in the Tauri migration — see v5plan/switchhosts-v5-capabilities-and-commands.md`,
+      `[v5] action "${action}" was removed in the Tauri migration`,
     )
   }
   return LEGACY_TO_NEW[action] ?? snakeCase(action)
