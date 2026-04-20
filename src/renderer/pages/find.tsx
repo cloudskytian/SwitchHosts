@@ -290,7 +290,7 @@ const FindPage = () => {
     if (history.length === 0) return
 
     let menu = new PopupMenu(
-      history.reverse().map((i) => ({
+      history.reverse().map((i: { value: string; is_regexp: boolean; is_ignore_case: boolean }) => ({
         label: i.value,
         click() {
           setKeyword(i.value)
@@ -308,7 +308,7 @@ const FindPage = () => {
     if (history.length === 0) return
 
     let menu = new PopupMenu(
-      history.reverse().map((v) => ({
+      history.reverse().map((v: string) => ({
         label: v,
         click() {
           setReplaceTo(v)

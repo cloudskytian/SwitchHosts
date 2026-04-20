@@ -908,17 +908,50 @@ fn refresh_tray_title<R: Runtime>(
 
 #[tauri::command]
 pub async fn open_url(args: Args) -> Value {
-    if let Some(url) = args.first().and_then(Value::as_str) {
+    let Some(url) = args.first().and_then(Value::as_str) else {
+        return Value::Null;
+    };
+    let lower = url.to_ascii_lowercase();
+    if lower.starts_with("http://")
+        || lower.starts_with("https://")
+        || lower.starts_with("mailto:")
+    {
         let _ = open::that(url);
+    } else {
+        log::warn!("open_url rejected non-whitelisted scheme: {}", url);
     }
     Value::Null
 }
 
 #[tauri::command]
 pub async fn show_item_in_folder(args: Args) -> Value {
-    if let Some(path) = args.first().and_then(Value::as_str) {
-        let _ = open::that(path);
+    let Some(path) = args.first().and_then(Value::as_str) else {
+        return Value::Null;
+    };
+
+    #[cfg(target_os = "macos")]
+    {
+        let _ = std::process::Command::new("open")
+            .args(["-R", path])
+            .spawn();
     }
+
+    #[cfg(target_os = "windows")]
+    {
+        let _ = std::process::Command::new("explorer.exe")
+            .arg(format!("/select,{}", path))
+            .spawn();
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        let parent = std::path::Path::new(path)
+            .parent()
+            .map(|p| p.to_string_lossy().into_owned())
+            .unwrap_or_else(|| path.to_string());
+        let _ = std::process::Command::new("xdg-open").arg(&parent).spawn();
+    }
+
     Value::Null
 }
 

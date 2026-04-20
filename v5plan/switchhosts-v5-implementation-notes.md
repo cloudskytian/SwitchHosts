@@ -32,6 +32,7 @@
 | Phase 2.D — 查找窗口 + 搜索引擎 | ✅ | `af4dbac` |
 | Phase 2.F — remote hosts 刷新（手动 + 后台 cron） | ✅ | `7af1df3` |
 | Phase 2.G — 本地 HTTP API (port 50761) | ✅ | `4d5127d` |
+| Phase 2.H — 系统集成杂项（locale 兜底 / open_url 白名单 / show_item_in_folder reveal） | ✅ | — |
 | P2.I 债务清理 — D2/D3/D6/D7/D8/D11 代码修复 | ✅ | `4403371` + `0171563` + `1847b1d` |
 | P2.I 债务标记 — D1/D4/D5/D9/D10 文档归档 | ✅ | `1847b1d` |
 | Phase 3 — updater + 发布链 | ⏳ | 未开始 |
