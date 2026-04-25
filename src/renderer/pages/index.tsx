@@ -3,9 +3,11 @@ import About from '@renderer/components/About'
 import EditHostsInfo from '@renderer/components/EditHostsInfo'
 import History from '@renderer/components/History'
 import LeftPanel from '@renderer/components/LeftPanel'
+import LeftSidebar from '@renderer/components/LeftSidebar'
 import Loading from '@renderer/components/Loading'
 import MainPanel from '@renderer/components/MainPanel'
 import PreferencePanel from '@renderer/components/Pref'
+import RightPanel from '@renderer/components/RightPanel'
 import SetWriteMode from '@renderer/components/SetWriteMode'
 import SudoPasswordInput from '@renderer/components/SudoPasswordInput'
 import UpdateDialog from '@renderer/components/UpdateDialog'
@@ -19,6 +21,10 @@ import useHostsData from '../models/useHostsData'
 import useI18n from '../models/useI18n'
 import styles from './index.module.scss'
 
+const LEFT_SIDEBAR_WIDTH = 40
+const RIGHT_PANEL_WIDTH = 240
+const BODY_PADDING_RIGHT = 8
+
 export default () => {
   const [loading, setLoading] = useState(true)
   const { setLocale } = useI18n()
@@ -26,6 +32,7 @@ export default () => {
   const { configs } = useConfigs()
   const [left_width, setLeftWidth] = useState(0)
   const [left_show, setLeftShow] = useState(true)
+  const [right_show, setRightShow] = useState(true)
   const [use_system_window_frame, setSystemFrame] = useState(false)
   const init = async () => {
     // v5: migration is handled automatically by the Rust backend on startup.
@@ -40,6 +47,7 @@ export default () => {
     setLocale(configs.locale)
     setLeftWidth(configs.left_panel_width)
     setLeftShow(configs.left_panel_show)
+    setRightShow(configs.right_panel_show)
     setSystemFrame(configs.use_system_window_frame)
 
     let theme = configs.theme
@@ -58,6 +66,7 @@ export default () => {
   }, [configs])
 
   useOnBroadcast(events.toggle_left_panel, (show: boolean) => setLeftShow(show))
+  useOnBroadcast(events.toggle_right_panel, (show: boolean) => setRightShow(show))
 
   if (loading) {
     return <Loading />
@@ -65,24 +74,48 @@ export default () => {
 
   return (
     <div className={styles.root}>
-      <TopBar show_left_panel={left_show} use_system_window_frame={use_system_window_frame} />
+      <TopBar
+        show_left_panel={left_show}
+        show_right_panel={right_show}
+        use_system_window_frame={use_system_window_frame}
+      />
 
-      <div>
+      <div className={styles.body}>
+        <div className={styles.left_sidebar} style={{ width: LEFT_SIDEBAR_WIDTH }}>
+          <LeftSidebar />
+        </div>
         <div
           className={styles.left}
           style={{
             width: left_width,
-            left: left_show ? 0 : -left_width,
+            left: left_show ? LEFT_SIDEBAR_WIDTH : -left_width,
           }}
         >
           <LeftPanel width={left_width} />
         </div>
         <div
           className={clsx(styles.main)}
-          style={{ width: `calc(100% - ${left_show ? left_width : 0}px)` }}
+          style={
+            {
+              left: LEFT_SIDEBAR_WIDTH + (left_show ? left_width : 0),
+              right: BODY_PADDING_RIGHT + (right_show ? RIGHT_PANEL_WIDTH : 0),
+              '--editor-radius-left': left_show ? '0' : 'var(--swh-border-radius)',
+              '--editor-radius-right': right_show ? '0' : 'var(--swh-border-radius)',
+            } as React.CSSProperties
+          }
         >
           <MainPanel />
         </div>
+        <div
+          className={styles.right_panel}
+          style={{
+            width: RIGHT_PANEL_WIDTH,
+            right: right_show ? BODY_PADDING_RIGHT : -RIGHT_PANEL_WIDTH,
+          }}
+        >
+          <RightPanel />
+        </div>
+        <div className={styles.body_frame} />
       </div>
 
       <EditHostsInfo />

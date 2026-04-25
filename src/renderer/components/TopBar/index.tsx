@@ -16,6 +16,8 @@ import {
   IconHistory,
   IconLayoutSidebarLeftCollapse,
   IconLayoutSidebarLeftExpand,
+  IconLayoutSidebarRightCollapse,
+  IconLayoutSidebarRightExpand,
   IconMinus,
   IconPlus,
   IconSquare,
@@ -27,11 +29,12 @@ import styles from './index.module.scss'
 
 interface IProps {
   show_left_panel: boolean
+  show_right_panel: boolean
   use_system_window_frame: boolean
 }
 
 export default (props: IProps) => {
-  const { show_left_panel, use_system_window_frame } = props
+  const { show_left_panel, show_right_panel, use_system_window_frame } = props
   const { lang } = useI18n()
   const { isHostsInTrashcan, current_hosts, isReadOnly } = useHostsData()
   const [is_on, setIsOn] = useState(!!current_hosts?.on)
@@ -130,6 +133,21 @@ export default (props: IProps) => {
         ) : null}
 
         <ConfigMenu iconSize={iconSize} />
+
+        <ActionIcon
+          aria-label="Toggle right panel"
+          onClick={() => {
+            agent.broadcast(events.toggle_right_panel, !show_right_panel)
+          }}
+          variant="subtle"
+          color="gray"
+        >
+          {show_right_panel ? (
+            <IconLayoutSidebarRightCollapse size={iconSize} />
+          ) : (
+            <IconLayoutSidebarRightExpand size={iconSize} />
+          )}
+        </ActionIcon>
 
         {show_window_controls ? (
           <>

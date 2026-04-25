@@ -25,6 +25,7 @@ pub struct AppConfig {
     // UI
     pub left_panel_show: bool,
     pub left_panel_width: u32,
+    pub right_panel_show: bool,
     pub use_system_window_frame: bool,
 
     // preferences
@@ -61,6 +62,7 @@ impl Default for AppConfig {
         Self {
             left_panel_show: true,
             left_panel_width: 270,
+            right_panel_show: true,
             use_system_window_frame: false,
 
             write_mode: "append".to_string(),

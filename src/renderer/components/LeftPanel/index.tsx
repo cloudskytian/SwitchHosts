@@ -30,9 +30,12 @@ const Index = (props: Props) => {
   ])
 
   return (
-    <div className={styles.list} onContextMenu={() => menu.show()}>
-      <List />
-      {hosts_data.trashcan.length > 0 ? <Trashcan /> : null}
+    <div className={styles.root} onContextMenu={() => menu.show()}>
+      <div className={styles.content}>
+        <List />
+        {hosts_data.trashcan.length > 0 ? <Trashcan /> : null}
+      </div>
+      <div className={styles.status_bar} />
     </div>
   )
 }

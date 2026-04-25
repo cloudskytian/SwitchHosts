@@ -9,6 +9,9 @@
   --swh-border-radius: 4px;
   --swh-highlight-bg: #993;
 
+  // window
+  --swh-window-bg: var(--mantine-color-dark-7);
+
   //  top bar
   --swh-top-bar-height: 40px;
   --swh-top-tool-bar-height: 28px;
@@ -16,7 +19,7 @@
   --swh-top-bar-read-only-bg: #3c434e;
 
   // left
-  --swh-left-panel-bg: #1f242a;
+  --swh-left-panel-bg: var(--mantine-color-dark-6);
   //--swh-left-panel-status-bar-bg: #f6f6f6;
   --swh-tree-row-height: 2em;
   --swh-tree-node-drag-bg: #475566;
@@ -31,6 +34,9 @@
   --swh-status-bar-bg: #272b34;
   --swh-status-bar-font-color: var(--swh-font-color-weak);
   --swh-status-bar-font-size: 10px;
+
+  // right
+  --swh-right-panel-bg: var(--mantine-color-dark-6);
 
   // right bar
   --swh-right-bar-width: 48px;
