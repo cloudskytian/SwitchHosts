@@ -27,7 +27,7 @@
   --swh-tree-hover-bg: var(--mantine-primary-color-light);
 
   // main
-  --swh-main-bg: #262b33;
+  --swh-main-bg: var(--mantine-color-dark-6);
 
   // status bar
   --swh-status-bar-height: 22px;
@@ -55,17 +55,17 @@
   --swh-editor-error-color: #900;
   --swh-editor-line-number-color: #999;
   --swh-editor-line-number-bg: #fff;
-  --swh-editor-read-only-bg: #2d333c;
+  --swh-editor-read-only-bg: var(--mantine-color-dark-5);
   --swh-editor-font-size: 1em;
   --swh-editor-line-height: 1.8em;
 
-  --swh-editor-bg-color: #272c35;
+  --swh-editor-bg-color: var(--mantine-color-dark-6);
   --swh-editor-ip: #3787de;
   --swh-editor-keyword: #06427d;
   --swh-editor-error: #ff5990;
   --swh-editor-comment: #91af91;
   --swh-editor-hl-bg: #ff0;
-  --swh-editor-gutter-bg: #282c34;
+  --swh-editor-gutter-bg: var(--mantine-color-dark-6);
 
   // tray
   --swh-tray-header-bg: var(--mantine-color-dark-7);
