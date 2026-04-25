@@ -1,5 +1,4 @@
 .root {
-
 }
 
 .node {
@@ -14,6 +13,7 @@
 
 .node_selected {
   background: var(--swh-tree-selected-bg);
+  color: var(--swh-font-color-reverse);
 
   &:hover {
     background: var(--swh-tree-selected-bg);
@@ -25,7 +25,7 @@
 }
 
 .node_drop_in {
-  div[data-role="tree-node-body"] {
+  div[data-role='tree-node-body'] {
     background: var(--swh-primary-color);
     color: var(--swh-font-color-reverse);
     border-radius: var(--swh-border-radius);
