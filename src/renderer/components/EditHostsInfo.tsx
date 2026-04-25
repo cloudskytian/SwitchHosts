@@ -259,7 +259,6 @@ const EditHostsInfo = () => {
             {is_add ? null : (
               <Button
                 variant="outline"
-                color="pink"
                 disabled={!hosts}
                 leftSection={<BiTrash />}
                 onClick={() => {
@@ -277,7 +276,7 @@ const EditHostsInfo = () => {
             <Button onClick={onCancel} variant="outline">
               {lang.btn_cancel}
             </Button>
-            <Button onClick={onSave} color="blue">
+            <Button onClick={onSave}>
               {lang.btn_ok}
             </Button>
           </Group>

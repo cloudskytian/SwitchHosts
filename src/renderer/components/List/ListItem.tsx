@@ -190,7 +190,6 @@ const ListItem = (props: Props) => {
             <div className={styles.edit}>
               <ActionIcon
                 variant="subtle"
-                color="gray"
                 onClick={() => {
                   agent.broadcast(events.edit_hosts_info, data)
                 }}

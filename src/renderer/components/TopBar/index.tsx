@@ -39,6 +39,7 @@ export default (props: IProps) => {
   const { isHostsInTrashcan, current_hosts, isReadOnly } = useHostsData()
   const [is_on, setIsOn] = useState(!!current_hosts?.on)
   const iconSize = 20
+  const iconStroke = 1.5
 
   const show_toggle_switch =
     !show_left_panel && current_hosts && !isHostsInTrashcan(current_hosts.id)
@@ -71,9 +72,9 @@ export default (props: IProps) => {
           color="gray"
         >
           {show_left_panel ? (
-            <IconLayoutSidebarLeftCollapse size={iconSize} />
+            <IconLayoutSidebarLeftCollapse size={iconSize} stroke={iconStroke} />
           ) : (
-            <IconLayoutSidebarLeftExpand size={iconSize} />
+            <IconLayoutSidebarLeftExpand size={iconSize} stroke={iconStroke} />
           )}
         </ActionIcon>
         <ActionIcon
@@ -82,7 +83,7 @@ export default (props: IProps) => {
           variant="subtle"
           color="gray"
         >
-          <IconPlus size={iconSize} />
+          <IconPlus size={iconSize} stroke={iconStroke} />
         </ActionIcon>
       </Flex>
 
@@ -128,7 +129,7 @@ export default (props: IProps) => {
             color="gray"
             onClick={() => agent.broadcast(events.show_history)}
           >
-            <IconHistory size={iconSize} />
+            <IconHistory size={iconSize} stroke={iconStroke} />
           </ActionIcon>
         ) : null}
 
@@ -143,9 +144,9 @@ export default (props: IProps) => {
           color="gray"
         >
           {show_right_panel ? (
-            <IconLayoutSidebarRightCollapse size={iconSize} />
+            <IconLayoutSidebarRightCollapse size={iconSize} stroke={iconStroke} />
           ) : (
-            <IconLayoutSidebarRightExpand size={iconSize} />
+            <IconLayoutSidebarRightExpand size={iconSize} stroke={iconStroke} />
           )}
         </ActionIcon>
 
@@ -157,7 +158,7 @@ export default (props: IProps) => {
               color="gray"
               onClick={() => getCurrentWindow().minimize()}
             >
-              <IconMinus size={iconSize} />
+              <IconMinus size={iconSize} stroke={iconStroke} />
             </ActionIcon>
             <ActionIcon
               aria-label="Maximize"
@@ -165,7 +166,7 @@ export default (props: IProps) => {
               color="gray"
               onClick={() => getCurrentWindow().toggleMaximize()}
             >
-              <IconSquare size={iconSize - 4} />
+              <IconSquare size={iconSize - 4} stroke={iconStroke} />
             </ActionIcon>
             <ActionIcon
               aria-label="Close window"
@@ -173,7 +174,7 @@ export default (props: IProps) => {
               color="gray"
               onClick={() => actions.closeMainWindow()}
             >
-              <IconX size={iconSize} />
+              <IconX size={iconSize} stroke={iconStroke} />
             </ActionIcon>
           </>
         ) : null}

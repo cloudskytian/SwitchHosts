@@ -202,7 +202,6 @@ const History = () => {
           <Box style={{ flex: 1 }} />
           <Button
             variant="outline"
-            color="red"
             disabled={!selected_item}
             onClick={() => selected_item && deleteItem(selected_item.id)}
             leftSection={<IconX size={16} />}

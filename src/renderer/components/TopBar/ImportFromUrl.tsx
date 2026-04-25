@@ -81,7 +81,7 @@ const ImportFromUrl = (props: Props) => {
           <Button variant="outline" onClick={onCancel}>
             {lang.btn_cancel}
           </Button>
-          <Button color="blue" onClick={onOk} disabled={!url || !url.match(/^https?:\/\/\w+/i)}>
+          <Button onClick={onOk} disabled={!url || !url.match(/^https?:\/\/\w+/i)}>
             {lang.btn_ok}
           </Button>
         </Group>

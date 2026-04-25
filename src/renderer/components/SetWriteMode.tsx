@@ -82,7 +82,7 @@ const SetWriteMode = () => {
           <Button variant="outline" onClick={onCancel}>
             {lang.btn_cancel}
           </Button>
-          <Button color="blue" onClick={onOk}>
+          <Button onClick={onOk}>
             {lang.btn_ok}
           </Button>
         </Group>

@@ -3,7 +3,7 @@
  * @homepage: https://oldj.net
  */
 
-import { MantineProvider } from '@mantine/core'
+import { createTheme, MantineColorsTuple, MantineProvider } from '@mantine/core'
 import '@mantine/core/styles.css'
 import { Notifications } from '@mantine/notifications'
 import '@mantine/notifications/styles.css'
@@ -31,6 +31,26 @@ const router = createHashRouter([
   },
 ])
 
+const swhColor: MantineColorsTuple = [
+  '#ffebee',
+  '#fbd7db',
+  '#eeaeb5',
+  '#e1838c',
+  '#d75e6a',
+  '#d04351',
+  '#cf3949',
+  '#b72b3a',
+  '#a42333',
+  '#91182a',
+]
+
+const theme = createTheme({
+  colors: {
+    swhColor,
+  },
+  primaryColor: 'swhColor',
+})
+
 const container = document.getElementById('root')
 if (container == null) throw new Error('container is null')
 
@@ -38,7 +58,7 @@ const AppRoot = () => {
   const { configs } = useConfigs()
 
   return (
-    <MantineProvider forceColorScheme={configs?.theme === 'dark' ? 'dark' : 'light'}>
+    <MantineProvider theme={theme} forceColorScheme={configs?.theme === 'dark' ? 'dark' : 'light'}>
       <Notifications position="top-center" />
       <PageWrapper>
         <RouterProvider router={router} />
