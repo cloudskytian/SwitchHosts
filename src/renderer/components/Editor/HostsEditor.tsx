@@ -11,13 +11,17 @@ import StatusBar from '@renderer/components/StatusBar'
 import { actions, agent } from '@renderer/core/agent'
 import useOnBroadcast from '@renderer/core/useOnBroadcast'
 import useHostsData from '@renderer/models/useHostsData'
+import { EditorState } from '@codemirror/state'
+import { EditorView } from '@codemirror/view'
 import { useDebounceFn } from 'ahooks'
 import clsx from 'clsx'
-import { CodeJar, type Position } from 'codejar'
-import { withLineNumbers } from 'codejar-linenumbers'
-import 'codejar-linenumbers/es/codejar-linenumbers.css'
 import { useEffect, useRef, useState } from 'react'
-import { highlightHosts, toggleCommentByLine, toggleCommentBySelection } from './hosts_highlight'
+import {
+  buildExtensions,
+  type BuiltExtensions,
+  readOnlyExtensions,
+} from './hosts_cm'
+import { toggleCommentByLine, toggleCommentBySelection } from './hosts_highlight'
 import styles from './HostsEditor.module.scss'
 
 const HostsEditor = () => {
@@ -26,25 +30,19 @@ const HostsEditor = () => {
   const is_read_only = isReadOnly(current_hosts)
   const [content, setContent] = useState('')
 
-  const ref_mount = useRef<HTMLDivElement>(null) // outer container that hosts the CodeJar wrapper
-  const ref_editor = useRef<HTMLDivElement | null>(null) // contenteditable div managed by CodeJar
-  const ref_jar = useRef<ReturnType<typeof CodeJar> | null>(null)
-  // Refs mirror React state so that callbacks inside the CodeJar effect
-  // (which only re-runs on hosts_id change) can always read the latest values.
+  const ref_mount = useRef<HTMLDivElement>(null)
+  const ref_view = useRef<EditorView | null>(null)
+  const ref_built = useRef<BuiltExtensions | null>(null)
+  // Refs mirror React state so that callbacks captured by EditorView extensions
+  // (which are created once on mount) can always read the latest values.
   const ref_hosts_id = useRef(hosts_id)
   const ref_is_read_only = useRef(is_read_only)
-  // Pending find: when a show_source event arrives before the target hosts is loaded,
-  // we stash the params here and apply them once loadContent finishes (with a 3s timeout).
+  // Pending find: when a show_source event arrives before the target hosts is loaded
+  // (List broadcasts select_hosts then show_source synchronously, but hosts_id only
+  // updates on the next render), we stash the params here and apply them once
+  // loadContent finishes (with a 3s timeout to avoid stale state).
   const ref_pending_find = useRef<IFindShowSourceParam | null>(null)
   const ref_pending_find_timer = useRef<number | null>(null)
-
-  useEffect(() => {
-    ref_hosts_id.current = hosts_id
-  }, [hosts_id])
-
-  useEffect(() => {
-    ref_is_read_only.current = is_read_only
-  }, [is_read_only])
 
   const clearPendingFind = () => {
     if (ref_pending_find_timer.current) {
@@ -56,6 +54,14 @@ const HostsEditor = () => {
 
   useEffect(() => clearPendingFind, [])
 
+  useEffect(() => {
+    ref_hosts_id.current = hosts_id
+  }, [hosts_id])
+
+  useEffect(() => {
+    ref_is_read_only.current = is_read_only
+  }, [is_read_only])
+
   const { run: toSave } = useDebounceFn(
     (id: string, nextContent: string) => {
       actions
@@ -66,58 +72,83 @@ const HostsEditor = () => {
     { wait: 1000 },
   )
 
-  /** Toggle contenteditable between 'plaintext-only' and 'false' (Chromium-based only). */
-  const setEditorReadOnly = (readOnly: boolean) => {
-    const editor = ref_editor.current
-    if (!editor) return
-
-    editor.setAttribute('contenteditable', readOnly ? 'false' : 'plaintext-only')
-    editor.setAttribute('aria-readonly', readOnly ? 'true' : 'false')
+  const onDocChange = (nextContent: string) => {
+    const normalizedContent = normalizeLineEndings(nextContent)
+    setContent(normalizedContent)
+    toSave(ref_hosts_id.current, normalizedContent)
   }
 
-  /** Scroll the current selection/cursor into view after programmatic focus changes. */
-  const scrollSelectionIntoView = () => {
-    const editor = ref_editor.current
-    if (!editor) return
+  const onGutterClick = (lineIndex: number) => {
+    if (ref_is_read_only.current) return
+    const view = ref_view.current
+    if (!view) return
+    if (view.composing) return
 
-    const selection = window.getSelection()
-    if (!selection || selection.rangeCount === 0) return
+    const code = view.state.doc.toString()
+    const sel = view.state.selection.main
+    const next = toggleCommentByLine(code, lineIndex, sel.from, sel.to)
+    if (!next.changed) return
 
-    const range = selection.getRangeAt(0)
-    const startNode = range.startContainer
-    const target =
-      startNode.nodeType === Node.TEXT_NODE
-        ? startNode.parentElement
-        : (startNode as Element | null)
-
-    ;(target ?? editor).scrollIntoView({
-      block: 'nearest',
-      inline: 'nearest',
+    view.dispatch({
+      changes: next.changes,
+      selection: { anchor: next.selectionStart, head: next.selectionEnd },
     })
+    view.focus()
+  }
+
+  const toggleComment = () => {
+    if (ref_is_read_only.current) return
+    const view = ref_view.current
+    if (!view) return
+    // Skip while an IME composition is active to avoid dropping characters.
+    if (view.composing) return
+
+    const code = view.state.doc.toString()
+    const sel = view.state.selection.main
+    const next = toggleCommentBySelection(code, sel.from, sel.to, true)
+    if (!next.changed) return
+
+    view.dispatch({
+      changes: next.changes,
+      selection: { anchor: next.selectionStart, head: next.selectionEnd },
+      scrollIntoView: true,
+    })
+    view.focus()
   }
 
   /** Restore a character-offset selection in the editor (used by find/show-source). */
   const setSelection = (params: IFindShowSourceParam) => {
-    const jar = ref_jar.current
-    const editor = ref_editor.current
-    if (!jar || !editor) return
+    const view = ref_view.current
+    if (!view) return
 
-    const editorContent = jar.toString()
-    const start = Math.max(0, Math.min(params.start, editorContent.length))
-    const end = Math.max(0, Math.min(params.end, editorContent.length))
-    jar.restore({
-      start,
-      end,
-      dir: '->',
+    const docLen = view.state.doc.length
+    const start = Math.max(0, Math.min(params.start, docLen))
+    const end = Math.max(0, Math.min(params.end, docLen))
+    view.dispatch({
+      selection: { anchor: start, head: end },
+      effects: EditorView.scrollIntoView(start, { y: 'center' }),
     })
-    editor.focus()
-    window.requestAnimationFrame(scrollSelectionIntoView)
+    view.focus()
   }
 
-  /** Fetch and display the hosts content. Applies any pending find selection after loading. */
+  /**
+   * Build a fresh set of extensions bound to the current readOnly value, then
+   * either install them on a new EditorView or apply via setState. We rebuild
+   * on every doc swap because setState resets compartments to the value bound
+   * at extension-creation time — reusing the mount-time extensions would silently
+   * revert any subsequent readOnly reconfigure.
+   */
+  const rebuildExtensions = () =>
+    buildExtensions({
+      initialReadOnly: ref_is_read_only.current,
+      onDocChange,
+      onGutterClick,
+    })
+
+  /** Fetch hosts content and replace the editor state (clears undo history). */
   const loadContent = async (targetHostsId = hosts_id) => {
-    const jar = ref_jar.current
-    if (!jar) return
+    const view = ref_view.current
+    if (!view) return
 
     const nextContent = normalizeLineEndings(
       targetHostsId === '0'
@@ -128,7 +159,9 @@ const HostsEditor = () => {
     if (ref_hosts_id.current !== targetHostsId) return
 
     setContent(nextContent)
-    jar.updateCode(nextContent, false)
+    const built = rebuildExtensions()
+    ref_built.current = built
+    view.setState(EditorState.create({ doc: nextContent, extensions: built.extensions }))
 
     const pendingFind = ref_pending_find.current
     if (pendingFind && pendingFind.item_id === targetHostsId) {
@@ -137,146 +170,43 @@ const HostsEditor = () => {
     }
   }
 
-  const getCurrentSelection = (): Position => {
-    const jar = ref_jar.current
-    const editor = ref_editor.current
-    const fallbackOffset = jar?.toString().length ?? 0
-    if (!jar || !editor) {
-      return {
-        start: fallbackOffset,
-        end: fallbackOffset,
-        dir: '->',
-      }
-    }
-
-    try {
-      return jar.save()
-    } catch {
-      return {
-        start: fallbackOffset,
-        end: fallbackOffset,
-        dir: '->',
-      }
-    }
-  }
-
-  const onChange = (nextContent: string) => {
-    const normalizedContent = normalizeLineEndings(nextContent)
-    setContent(normalizedContent)
-    toSave(hosts_id, normalizedContent)
-  }
-
-  /** Push a programmatic edit into CodeJar: update content, restore selection, and record undo history. */
-  const applyEditorChange = (nextContent: string, nextSelection: Position) => {
-    const jar = ref_jar.current
-    const editor = ref_editor.current
-    if (!jar || !editor) return
-
-    editor.focus()
-    jar.recordHistory()
-    jar.updateCode(nextContent, false)
-    jar.restore(nextSelection)
-    editor.focus()
-    jar.recordHistory()
-    onChange(nextContent)
-  }
-
-  const toggleComment = () => {
-    if (ref_is_read_only.current) return
-
-    const jar = ref_jar.current
-    if (!jar) return
-
-    const selection = getCurrentSelection()
-    const next = toggleCommentBySelection(jar.toString(), selection.start, selection.end, true)
-    if (!next.changed) return
-
-    applyEditorChange(next.content, {
-      start: next.selectionStart,
-      end: next.selectionEnd,
-      dir: '->',
-    })
-  }
-
-  /** Handle a click on the line-number gutter to toggle comment on that line. */
-  const onGutterClick = (lineIndex: number) => {
-    if (ref_is_read_only.current) return
-
-    const jar = ref_jar.current
-    if (!jar) return
-
-    const selection = getCurrentSelection()
-    const next = toggleCommentByLine(jar.toString(), lineIndex, selection.start, selection.end)
-    if (!next.changed) return
-
-    applyEditorChange(next.content, {
-      start: next.selectionStart,
-      end: next.selectionEnd,
-      dir: '->',
-    })
-  }
-
+  // Mount EditorView once; survive across hosts switches via setState.
   useEffect(() => {
     const mount = ref_mount.current
     if (!mount) return
 
-    mount.replaceChildren()
+    const built = rebuildExtensions()
+    const view = new EditorView({
+      state: EditorState.create({ doc: '', extensions: built.extensions }),
+      parent: mount,
+    })
 
-    const editor = document.createElement('div')
-    editor.className = styles.surface
-    editor.tabIndex = 0
-    mount.appendChild(editor)
-
-    const jar = CodeJar(
-      editor,
-      withLineNumbers(highlightHosts, {
-        width: '25px',
-        backgroundColor: 'var(--swh-editor-gutter-bg)',
-        color: 'var(--swh-editor-line-number-color)',
-      }),
-    )
-    ref_editor.current = editor
-    ref_jar.current = jar
-    setEditorReadOnly(is_read_only)
-
-    const onEditorUpdate = (nextContent: string) => {
-      onChange(nextContent)
-    }
-
-    // Detect clicks on the line-number gutter and convert the click Y position
-    // into a zero-based line index, accounting for scroll offset of the wrapper.
-    const onMountClick = (event: MouseEvent) => {
-      const target = event.target as HTMLElement | null
-      const gutter = target?.closest('.codejar-linenumbers')
-      if (!gutter) return
-
-      const lineHeight = parseFloat(window.getComputedStyle(editor).lineHeight) || 24
-      const scrollContainer = gutter.closest('.codejar-wrap') ?? editor
-      const relativeY =
-        event.clientY - gutter.getBoundingClientRect().top + scrollContainer.scrollTop
-      const lineCount = Math.max(1, jar.toString().split('\n').length)
-      const lineIndex = Math.max(0, Math.min(lineCount - 1, Math.floor(relativeY / lineHeight)))
-
-      event.preventDefault()
-      onGutterClick(lineIndex)
-    }
-
-    jar.onUpdate(onEditorUpdate)
-    jar.updateCode('', false)
-    mount.addEventListener('click', onMountClick)
-    loadContent(hosts_id).catch((e) => console.error(e))
+    ref_built.current = built
+    ref_view.current = view
 
     return () => {
-      mount.removeEventListener('click', onMountClick)
-      jar.destroy()
-      mount.replaceChildren()
-      ref_jar.current = null
-      ref_editor.current = null
+      view.destroy()
+      ref_view.current = null
+      ref_built.current = null
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Load content when the active hosts changes.
+  useEffect(() => {
+    loadContent(hosts_id).catch((e) => console.error(e))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hosts_id])
 
+  // Reconfigure read-only state via the compartment without rebuilding the editor.
   useEffect(() => {
-    setEditorReadOnly(is_read_only)
+    const view = ref_view.current
+    const built = ref_built.current
+    if (!view || !built) return
+
+    view.dispatch({
+      effects: built.readOnlyCompartment.reconfigure(readOnlyExtensions(is_read_only)),
+    })
   }, [is_read_only])
 
   useOnBroadcast(
@@ -322,7 +252,10 @@ const HostsEditor = () => {
   useOnBroadcast(
     events.show_source,
     (params: IFindShowSourceParam) => {
-      if (params.item_id !== hosts_id || !ref_jar.current) {
+      // Cross-host jump: List broadcasts select_hosts to switch the active hosts,
+      // but hosts_id only updates on the next render. Stash params and let
+      // loadContent apply them after setState.
+      if (params.item_id !== hosts_id || !ref_view.current) {
         clearPendingFind()
         ref_pending_find.current = params
         ref_pending_find_timer.current = window.setTimeout(clearPendingFind, 3000)
