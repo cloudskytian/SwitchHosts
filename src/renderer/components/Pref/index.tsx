@@ -74,7 +74,7 @@ const PreferencePanel = () => {
           <Button variant="outline" onClick={onClose}>
             {lang.btn_cancel}
           </Button>
-          <Button onClick={onSave} color="blue">
+          <Button onClick={onSave}>
             {lang.btn_ok}
           </Button>
         </Group>

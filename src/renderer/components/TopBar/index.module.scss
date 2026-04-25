@@ -4,8 +4,8 @@
   $w: 150px;
   $p: 10px;
 
-  background: var(--swh-top-bar-bg);
-  border-bottom: 1px solid var(--swh-border-color-0);
+  background: transparent;
+  // border-bottom: 1px solid var(--swh-border-color-0);
   display: flex;
   width: 100%;
   padding: 0 $p;

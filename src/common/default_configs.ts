@@ -10,6 +10,7 @@ const configs = {
   // UI
   left_panel_show: true,
   left_panel_width: 270,
+  right_panel_show: true,
   use_system_window_frame: false,
 
   // preferences

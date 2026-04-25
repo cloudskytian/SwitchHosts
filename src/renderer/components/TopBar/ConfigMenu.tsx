@@ -44,7 +44,7 @@ const ConfigMenu = (props: IProps) => {
       <Menu shadow="md" withinPortal>
         <Menu.Target>
           <ActionIcon variant="subtle" color="gray">
-            <IconSettings size={iconSize} />
+            <IconSettings size={iconSize} stroke={strokeWidth} />
           </ActionIcon>
         </Menu.Target>
         <Menu.Dropdown className={styles.menu_list}>

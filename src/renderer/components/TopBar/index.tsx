@@ -16,6 +16,8 @@ import {
   IconHistory,
   IconLayoutSidebarLeftCollapse,
   IconLayoutSidebarLeftExpand,
+  IconLayoutSidebarRightCollapse,
+  IconLayoutSidebarRightExpand,
   IconMinus,
   IconPlus,
   IconSquare,
@@ -27,15 +29,17 @@ import styles from './index.module.scss'
 
 interface IProps {
   show_left_panel: boolean
+  show_right_panel: boolean
   use_system_window_frame: boolean
 }
 
 export default (props: IProps) => {
-  const { show_left_panel, use_system_window_frame } = props
+  const { show_left_panel, show_right_panel, use_system_window_frame } = props
   const { lang } = useI18n()
   const { isHostsInTrashcan, current_hosts, isReadOnly } = useHostsData()
   const [is_on, setIsOn] = useState(!!current_hosts?.on)
   const iconSize = 20
+  const iconStroke = 1.5
 
   const show_toggle_switch =
     !show_left_panel && current_hosts && !isHostsInTrashcan(current_hosts.id)
@@ -68,9 +72,9 @@ export default (props: IProps) => {
           color="gray"
         >
           {show_left_panel ? (
-            <IconLayoutSidebarLeftCollapse size={iconSize} />
+            <IconLayoutSidebarLeftCollapse size={iconSize} stroke={iconStroke} />
           ) : (
-            <IconLayoutSidebarLeftExpand size={iconSize} />
+            <IconLayoutSidebarLeftExpand size={iconSize} stroke={iconStroke} />
           )}
         </ActionIcon>
         <ActionIcon
@@ -79,7 +83,7 @@ export default (props: IProps) => {
           variant="subtle"
           color="gray"
         >
-          <IconPlus size={iconSize} />
+          <IconPlus size={iconSize} stroke={iconStroke} />
         </ActionIcon>
       </Flex>
 
@@ -125,11 +129,26 @@ export default (props: IProps) => {
             color="gray"
             onClick={() => agent.broadcast(events.show_history)}
           >
-            <IconHistory size={iconSize} />
+            <IconHistory size={iconSize} stroke={iconStroke} />
           </ActionIcon>
         ) : null}
 
         <ConfigMenu iconSize={iconSize} />
+
+        <ActionIcon
+          aria-label="Toggle right panel"
+          onClick={() => {
+            agent.broadcast(events.toggle_right_panel, !show_right_panel)
+          }}
+          variant="subtle"
+          color="gray"
+        >
+          {show_right_panel ? (
+            <IconLayoutSidebarRightCollapse size={iconSize} stroke={iconStroke} />
+          ) : (
+            <IconLayoutSidebarRightExpand size={iconSize} stroke={iconStroke} />
+          )}
+        </ActionIcon>
 
         {show_window_controls ? (
           <>
@@ -139,7 +158,7 @@ export default (props: IProps) => {
               color="gray"
               onClick={() => getCurrentWindow().minimize()}
             >
-              <IconMinus size={iconSize} />
+              <IconMinus size={iconSize} stroke={iconStroke} />
             </ActionIcon>
             <ActionIcon
               aria-label="Maximize"
@@ -147,7 +166,7 @@ export default (props: IProps) => {
               color="gray"
               onClick={() => getCurrentWindow().toggleMaximize()}
             >
-              <IconSquare size={iconSize - 4} />
+              <IconSquare size={iconSize - 4} stroke={iconStroke} />
             </ActionIcon>
             <ActionIcon
               aria-label="Close window"
@@ -155,7 +174,7 @@ export default (props: IProps) => {
               color="gray"
               onClick={() => actions.closeMainWindow()}
             >
-              <IconX size={iconSize} />
+              <IconX size={iconSize} stroke={iconStroke} />
             </ActionIcon>
           </>
         ) : null}

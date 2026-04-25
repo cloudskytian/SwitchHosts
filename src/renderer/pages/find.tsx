@@ -417,7 +417,6 @@ const FindPage = () => {
           <Button
             size="sm"
             variant="filled"
-            color="blue"
             disabled={is_searching || find_positions.length === 0 || !can_replace}
             onClick={replaceOne}
           >
