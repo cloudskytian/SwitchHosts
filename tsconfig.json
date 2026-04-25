@@ -34,7 +34,8 @@
     },
     "allowSyntheticDefaultImports": true,
     "declaration": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "types": ["node"]
   },
   "include": [
     "mock/**/*",
