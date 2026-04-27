@@ -139,6 +139,7 @@ const lang: LanguageDict = {
   reset_data_dir_confirm:
     "Êtes-vous sûr de vouloir réinitialiser le dossier de données à l'adresse par défaut?({0})?",
   reset_zoom: 'Réinitialiser le zoom',
+  rules: 'Règles',
   search: 'Rechercher',
   select_all: 'Tout sélectionner',
   selected: 'Sélectionné',

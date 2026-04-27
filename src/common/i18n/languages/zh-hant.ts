@@ -132,6 +132,7 @@ const lang: LanguageDict = {
   reset: '重設',
   reset_data_dir_confirm: '確定要把資料夾重設為預設路徑嗎？({0})?',
   reset_zoom: '重設縮放',
+  rules: '規則數',
   search: '搜尋',
   select_all: '全選',
   selected: '已選',

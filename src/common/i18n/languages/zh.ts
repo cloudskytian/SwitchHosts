@@ -132,6 +132,7 @@ const lang: LanguageDict = {
   reset: '重置',
   reset_data_dir_confirm: '确定要把数据文件夹重置为默认地址吗？({0})?',
   reset_zoom: '重置缩放',
+  rules: '规则数',
   search: '搜索',
   select_all: '全选',
   selected: '已选',

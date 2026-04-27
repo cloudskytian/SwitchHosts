@@ -137,6 +137,7 @@ export default {
   reset_data_dir_confirm:
     '이 데이터 폴더를 기본 경로({0})로 복원하시겠습니까?',
   reset_zoom: '확대 재설정',
+  rules: '규칙 수',
   search: '찾기',
   select_all: '전체 선택',
   selected: '선택',

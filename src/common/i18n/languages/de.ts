@@ -138,6 +138,7 @@ const lang: LanguageDict = {
   reset_data_dir_confirm:
     'Sind Sie sicher, dass Sie den Datenordner an der Standardadresse ({0}) wiederherstellen wollen?',
   reset_zoom: 'Zoom zurücksetzen',
+  rules: 'Regeln',
   search: 'Suchen',
   select_all: 'Alles auswählen',
   selected: 'Ausgewählt',

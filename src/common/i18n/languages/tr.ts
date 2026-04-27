@@ -132,6 +132,7 @@ export default {
   reset: 'Sıfırla',
   reset_data_dir_confirm: 'Veri klasörünü varsayılan adrese ({0}) geri yüklemek istediğinizden emin misiniz?',
   reset_zoom: 'Yakınlaştırmayı Sıfırla',
+  rules: 'Kurallar',
   search: 'Ara',
   select_all: 'Hepsini Seç',
   selected: 'Seçildi',

@@ -130,6 +130,7 @@ export default {
   reset: 'Resetuj',
   reset_data_dir_confirm: 'Czy na pewno chcesz przywrócić folder danych do adresu domyślnego ({0})?',
   reset_zoom: 'Resetuj powiększenie',
+  rules: 'Reguły',
   search: 'Szukaj',
   select_all: 'Zaznacz wszystko',
   selected: 'Wybrane',

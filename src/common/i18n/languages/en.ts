@@ -138,6 +138,7 @@ export default {
   reset_data_dir_confirm:
     'Are you sure you want to restore the data folder to the default address ({0})?',
   reset_zoom: 'Reset zoom',
+  rules: 'Rules',
   search: 'Search',
   select_all: 'Select all',
   selected: 'Selected',
