@@ -27,3 +27,17 @@ a {
     opacity: 0.8;
   }
 }
+
+html,
+body {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+input,
+textarea,
+[contenteditable],
+[contenteditable='true'] {
+  user-select: text;
+  -webkit-user-select: text;
+}
