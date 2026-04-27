@@ -137,6 +137,7 @@ const lang: LanguageDict = {
   reset: 'リセット',
   reset_data_dir_confirm: 'データフォルダーの場所をデフォルト ({0}) に戻してもよろしいですか？',
   reset_zoom: 'ズームをリセット',
+  rules: 'ルール数',
   search: '検索',
   select_all: 'すべて選択',
   selected: '選択済み',
