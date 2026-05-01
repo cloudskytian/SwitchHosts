@@ -8,8 +8,9 @@ import Trashcan from '@renderer/components/LeftPanel/Trashcan'
 import List from '@renderer/components/List'
 import { agent } from '@renderer/core/agent'
 import { PopupMenu } from '@renderer/core/PopupMenu'
-import useHostsData from '@renderer/models/useHostsData'
 import useI18n from '@renderer/models/useI18n'
+import { left_panel_view_atom } from '@renderer/stores/ui'
+import { useAtomValue } from 'jotai'
 import styles from './index.module.scss'
 
 interface Props {
@@ -18,7 +19,7 @@ interface Props {
 
 const Index = (props: Props) => {
   const { lang } = useI18n()
-  const { hosts_data } = useHostsData()
+  const view = useAtomValue(left_panel_view_atom)
 
   const menu = new PopupMenu([
     {
@@ -30,11 +31,13 @@ const Index = (props: Props) => {
   ])
 
   return (
-    <div className={styles.root} onContextMenu={() => menu.show()}>
-      <div className={styles.content}>
-        <List />
-        {hosts_data.trashcan.length > 0 ? <Trashcan /> : null}
-      </div>
+    <div
+      className={styles.root}
+      onContextMenu={() => {
+        if (view === 'list') menu.show()
+      }}
+    >
+      <div className={styles.content}>{view === 'list' ? <List /> : <Trashcan />}</div>
       <div className={styles.status_bar} />
     </div>
   )

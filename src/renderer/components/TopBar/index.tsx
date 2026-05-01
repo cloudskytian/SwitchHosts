@@ -7,7 +7,6 @@ import events from '@common/events'
 import { ActionIcon, Box, Flex } from '@mantine/core'
 import ItemIcon from '@renderer/components/ItemIcon'
 import SwitchButton from '@renderer/components/SwitchButton'
-import ConfigMenu from '@renderer/components/TopBar/ConfigMenu'
 import { actions, agent } from '@renderer/core/agent'
 import useOnBroadcast from '@renderer/core/useOnBroadcast'
 import useHostsData from '@renderer/models/useHostsData'
@@ -132,8 +131,6 @@ export default (props: IProps) => {
             <IconHistory size={iconSize} stroke={iconStroke} />
           </ActionIcon>
         ) : null}
-
-        <ConfigMenu iconSize={iconSize} />
 
         <ActionIcon
           aria-label="Toggle right panel"
