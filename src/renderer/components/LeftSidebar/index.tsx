@@ -17,8 +17,8 @@ const LeftSidebar = () => {
       <Stack gap={20} align="center" pt={8}>
         <Tooltip label={'Hosts'} position="right">
           <ActionIcon
-            variant={view === 'list' ? 'filled' : 'subtle'}
-            color="gray"
+            variant={view === 'list' ? 'light' : 'subtle'}
+            color={view === 'list' ? undefined : 'gray'}
             size={28}
             onClick={() => setView('list')}
             aria-label={'Hosts'}
@@ -35,8 +35,8 @@ const LeftSidebar = () => {
             offset={4}
           >
             <ActionIcon
-              variant={view === 'trashcan' ? 'filled' : 'subtle'}
-              color="gray"
+              variant={view === 'trashcan' ? 'light' : 'subtle'}
+              color={view === 'trashcan' ? undefined : 'gray'}
               size={28}
               onClick={() => setView('trashcan')}
               aria-label={lang.trashcan}
