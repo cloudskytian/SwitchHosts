@@ -20,7 +20,7 @@ export default function useHostsData() {
   const setList = async (list: IHostsListObject[]) => {
     list = list.filter((i) => !i.is_sys)
 
-    let data: IHostsBasicData = {
+    const data: IHostsBasicData = {
       list,
       trashcan: hosts_data.trashcan,
       version,

@@ -75,8 +75,8 @@ const FindPage = () => {
 
     setLocale(configs.locale)
 
-    let theme = configs.theme
-    let cls = document.body.className
+    const theme = configs.theme
+    const cls = document.body.className
     document.body.className = cls.replace(/\btheme-\w+/gi, '')
     document.body.classList.add(`platform-${agent.platform}`, `theme-${theme}`)
   }
@@ -119,10 +119,10 @@ const FindPage = () => {
   })
 
   const parsePositionShow = (find_items: IFindItem[]) => {
-    let positions_show: IFindPositionShow[] = []
+    const positions_show: IFindPositionShow[] = []
 
     find_items.map((item) => {
-      let { item_id, item_title, item_type, positions } = item
+      const { item_id, item_title, item_type, positions } = item
       positions.map((p, index) => {
         positions_show.push({
           item_id,
@@ -147,7 +147,7 @@ const FindPage = () => {
       }
 
       setIsSearching(true)
-      let result = await actions.findBy(v, {
+      const result = await actions.findBy(v, {
         is_regexp,
         is_ignore_case,
       })
@@ -184,7 +184,7 @@ const FindPage = () => {
   }
 
   const replaceOne = async () => {
-    let pos: IFindPositionShow = find_positions[current_result_idx]
+    const pos: IFindPositionShow = find_positions[current_result_idx]
     if (!pos) return
 
     setFindPositions([
@@ -200,10 +200,10 @@ const FindPage = () => {
       actions.findAddReplaceHistory(replace_to).catch((e) => console.error(e))
     }
 
-    let r = find_result.find((i) => i.item_id === pos.item_id)
+    const r = find_result.find((i) => i.item_id === pos.item_id)
     if (!r) return
-    let splitters = r.splitters
-    let sp = splitters[pos.index]
+    const splitters = r.splitters
+    const sp = splitters[pos.index]
     if (!sp) return
     sp.replace = replace_to
 
@@ -219,8 +219,8 @@ const FindPage = () => {
   }
 
   const replaceAll = async () => {
-    for (let item of find_result) {
-      let { item_id, item_type, splitters } = item
+    for (const item of find_result) {
+      const { item_id, item_type, splitters } = item
       if (item_type !== 'local' || splitters.length === 0) continue
       const content = splitters
         .map((splitter) => `${splitter.before}${replace_to}${splitter.after}`)
@@ -286,10 +286,10 @@ const FindPage = () => {
   }
 
   const showKeywordHistory = async () => {
-    let history = await actions.findGetHistory()
+    const history = await actions.findGetHistory()
     if (history.length === 0) return
 
-    let menu = new PopupMenu(
+    const menu = new PopupMenu(
       history.reverse().map((i: { value: string; is_regexp: boolean; is_ignore_case: boolean }) => ({
         label: i.value,
         click() {
@@ -304,10 +304,10 @@ const FindPage = () => {
   }
 
   const showReplaceHistory = async () => {
-    let history = await actions.findGetReplaceHistory()
+    const history = await actions.findGetReplaceHistory()
     if (history.length === 0) return
 
-    let menu = new PopupMenu(
+    const menu = new PopupMenu(
       history.reverse().map((v: string) => ({
         label: v,
         click() {
@@ -321,7 +321,7 @@ const FindPage = () => {
 
   let can_replace = true
   if (current_result_idx > -1) {
-    let pos = find_positions[current_result_idx]
+    const pos = find_positions[current_result_idx]
     if (pos?.is_disabled || pos?.is_readonly) {
       can_replace = false
     }

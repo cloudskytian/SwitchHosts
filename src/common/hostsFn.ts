@@ -24,7 +24,7 @@ export const flatten = (list: IHostsListObject[]): IHostsListObject[] => {
 }
 
 export const cleanHostsList = (data: IHostsBasicData): IHostsBasicData => {
-  let list = flatten(data.list)
+  const list = flatten(data.list)
 
   list.map((item) => {
     if (item.type === 'folder' && !Array.isArray(item.children)) {
@@ -54,9 +54,9 @@ export const updateOneItem = (
   list: IHostsListObject[],
   item: PartHostsObjectType,
 ): IHostsListObject[] => {
-  let new_list: IHostsListObject[] = lodash.cloneDeep(list)
+  const new_list: IHostsListObject[] = lodash.cloneDeep(list)
 
-  let i = findItemById(new_list, item.id)
+  const i = findItemById(new_list, item.id)
   if (i) {
     Object.assign(i, item)
   }
@@ -75,14 +75,14 @@ export const setOnStateOfItem = (
   default_choice_mode: FolderModeType = 0,
   multi_chose_folder_switch_all: boolean = false,
 ): IHostsListObject[] => {
-  let new_list: IHostsListObject[] = lodash.cloneDeep(list)
+  const new_list: IHostsListObject[] = lodash.cloneDeep(list)
 
   let item = findItemById(new_list, id)
   if (!item) return new_list
 
   item.on = on
 
-  let itemIsInTopLevel = isInTopLevel(list, id)
+  const itemIsInTopLevel = isInTopLevel(list, id)
   if (multi_chose_folder_switch_all) {
     item = switchFolderChild(item, on)
     !itemIsInTopLevel && switchItemParentIsON(new_list, item, on)
@@ -104,9 +104,9 @@ export const setOnStateOfItem = (
       })
     }
   } else {
-    let parent = getParentOfItem(new_list, id)
+    const parent = getParentOfItem(new_list, id)
     if (parent) {
-      let folder_mode = parent.folder_mode || default_choice_mode
+      const folder_mode = parent.folder_mode || default_choice_mode
       if (folder_mode === 1 && parent.children) {
         // 单选模式
         parent.children.map((item) => {
@@ -129,7 +129,7 @@ export const switchItemParentIsON = (
   item: IHostsListObject,
   on: boolean,
 ) => {
-  let parent = getParentOfItem(list, item.id)
+  const parent = getParentOfItem(list, item.id)
 
   if (parent) {
     if (parent.folder_mode === 1) {
@@ -147,7 +147,7 @@ export const switchItemParentIsON = (
       parent.on = parentOn
     }
 
-    let itemIsInTopLevel = isInTopLevel(list, parent.id)
+    const itemIsInTopLevel = isInTopLevel(list, parent.id)
     if (!itemIsInTopLevel) {
       switchItemParentIsON(list, parent, on)
     }
@@ -158,7 +158,7 @@ export const switchFolderChild = (item: IHostsListObject, on: boolean): IHostsLi
   if (item.type != 'folder') {
     return item
   }
-  let folder_mode = item.folder_mode
+  const folder_mode = item.folder_mode
   if (folder_mode === 1) {
     return item
   }
@@ -176,7 +176,7 @@ export const switchFolderChild = (item: IHostsListObject, on: boolean): IHostsLi
 }
 
 export const deleteItemById = (list: IHostsListObject[], id: string) => {
-  let idx = list.findIndex((item) => item.id === id)
+  const idx = list.findIndex((item) => item.id === id)
   if (idx >= 0) {
     list.splice(idx, 1)
     return
@@ -196,7 +196,7 @@ export const getNextSelectedItem = (
   tree: IHostsListObject[],
   predicate: Predicate,
 ): IHostsListObject | undefined => {
-  let flat = flatten(tree)
+  const flat = flatten(tree)
   let idx_1 = -1
   let idx_2 = -1
 
@@ -221,8 +221,8 @@ export const getParentOfItem = (
     return
   }
 
-  let flat = flatten(list)
-  for (let p of flat) {
+  const flat = flatten(list)
+  for (const p of flat) {
     if (p.children && p.children.find((i) => i.id === item_id)) {
       return p
     }

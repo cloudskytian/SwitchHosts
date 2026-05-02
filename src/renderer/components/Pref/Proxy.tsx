@@ -27,7 +27,7 @@ const General = (props: IProps) => {
           <Checkbox
             checked={data.use_proxy}
             onChange={(e) => {
-              let is_use = e.target.checked
+              const is_use = e.target.checked
               setIsUse(is_use)
               onChange({ use_proxy: is_use })
             }}

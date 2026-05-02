@@ -20,7 +20,7 @@ export default () => {
     setLocale(configs.locale)
     loadHostsData().catch((e) => console.error(e))
 
-    let cls = document.body.className
+    const cls = document.body.className
     document.body.className = cls.replace(/\btheme-\w+/gi, '')
     document.body.classList.add(`platform-${agent.platform}`, `theme-${configs.theme}`)
   }

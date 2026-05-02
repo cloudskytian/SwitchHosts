@@ -52,7 +52,7 @@ export class I18N {
   }
 
   trans(key: LanguageKey, words?: string[]) {
-    let lang = languages[this.locale]
+    const lang = languages[this.locale]
 
     let s: string = ''
 
@@ -62,7 +62,7 @@ export class I18N {
 
     if (words) {
       words.map((w, idx) => {
-        let reg = new RegExp(`\{\s*${idx}\s*}`)
+        const reg = new RegExp(`\{\s*${idx}\s*}`)
         s = s.replace(reg, w)
       })
     }

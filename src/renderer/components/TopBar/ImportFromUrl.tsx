@@ -32,7 +32,7 @@ const ImportFromUrl = (props: Props) => {
     console.log(`url: ${url}`)
 
     if (url) {
-      let r = await actions.importDataFromUrl(url)
+      const r = await actions.importDataFromUrl(url)
       console.log(r)
 
       if (r === true) {

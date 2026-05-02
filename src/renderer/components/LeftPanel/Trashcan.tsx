@@ -38,8 +38,8 @@ const Trashcan = () => {
   )
 
   const onSelect = (ids: string[]) => {
-    let id = ids[0]
-    let item = hosts_data.trashcan.find((i) => i.data.id === id)
+    const id = ids[0]
+    const item = hosts_data.trashcan.find((i) => i.data.id === id)
     if (!item) return
     setCurrentHosts(item.data)
   }

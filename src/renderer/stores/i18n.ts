@@ -14,7 +14,7 @@ export function resolveSystemLocale(): LocaleName {
   return 'en'
 }
 
-let _locale = localStorage.getItem('locale') as LocaleName | undefined
+const _locale = localStorage.getItem('locale') as LocaleName | undefined
 
 export const locale_atom = atom<LocaleName>(_locale || resolveSystemLocale())
 export const i18n_atom = atom((get) => new I18N(get(locale_atom)))

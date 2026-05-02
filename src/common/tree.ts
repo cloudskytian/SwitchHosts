@@ -28,7 +28,7 @@ export function flatten<T extends IWithChildren>(tree_list: T[]): T[] {
       arr.push(item)
 
       if (Array.isArray(item.children)) {
-        let a2 = flatten(item.children)
+        const a2 = flatten(item.children)
         arr = arr.concat(a2)
       }
     })

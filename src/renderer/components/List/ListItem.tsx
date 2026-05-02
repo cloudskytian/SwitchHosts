@@ -78,7 +78,7 @@ const ListItem = (props: Props) => {
   const toggleIsCollapsed = () => {
     if (!is_folder) return
 
-    let _is_collapsed = !is_collapsed
+    const _is_collapsed = !is_collapsed
     setIsCollapsed(_is_collapsed)
     setList(
       updateOneItem(hosts_data.list, {
@@ -154,7 +154,7 @@ const ListItem = (props: Props) => {
                 ? lang.move_to_trashcan
                 : i18n.trans('move_items_to_trashcan', [deal_count.toLocaleString()]),
             click() {
-              let ids = deal_count === 1 ? [data.id] : selected_ids
+              const ids = deal_count === 1 ? [data.id] : selected_ids
               agent.broadcast(events.move_to_trashcan, ids)
             },
           },

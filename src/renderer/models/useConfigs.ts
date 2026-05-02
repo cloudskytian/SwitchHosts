@@ -18,7 +18,7 @@ export default function useConfigs() {
   const updateConfigs = async (kv: Partial<ConfigsType>) => {
     if (!configs) return
     // console.log('update configs:', kv)
-    let new_configs = { ...configs, ...kv }
+    const new_configs = { ...configs, ...kv }
     setConfigs(new_configs)
     await actions.configUpdate(new_configs)
   }

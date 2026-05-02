@@ -43,7 +43,7 @@ const EditHostsInfo = () => {
   }
 
   const onSave = async () => {
-    let data: Omit<IHostsListObject, 'id'> & { id?: string } = { ...hosts }
+    const data: Omit<IHostsListObject, 'id'> & { id?: string } = { ...hosts }
 
     const keys_to_trim = ['title', 'url']
     keys_to_trim.map((k) => {
@@ -53,15 +53,15 @@ const EditHostsInfo = () => {
     })
 
     if (is_add) {
-      let h: IHostsListObject = {
+      const h: IHostsListObject = {
         ...data,
         id: uuidv4(),
       }
-      let list: IHostsListObject[] = [...hosts_data.list, h]
+      const list: IHostsListObject[] = [...hosts_data.list, h]
       await setList(list)
       agent.broadcast(events.select_hosts, h.id, 1000)
     } else if (data && data.id) {
-      let h: IHostsListObject | undefined = hostsFn.findItemById(hosts_data.list, data.id)
+      const h: IHostsListObject | undefined = hostsFn.findItemById(hosts_data.list, data.id)
       if (h) {
         Object.assign(h, data)
         await setList([...hosts_data.list])
@@ -82,7 +82,7 @@ const EditHostsInfo = () => {
   }
 
   const onUpdate = (kv: Partial<IHostsListObject>) => {
-    let obj: IHostsListObject = Object.assign({}, hosts, kv)
+    const obj: IHostsListObject = Object.assign({}, hosts, kv)
     setHosts(obj)
   }
 
@@ -194,15 +194,15 @@ const EditHostsInfo = () => {
   const forGroup = (): React.ReactElement => {
     const list = hostsFn.flatten(hosts_data.list)
 
-    let source_list: IHostsListObject[] = list
+    const source_list: IHostsListObject[] = list
       .filter((item) => !item.type || item.type === 'local' || item.type === 'remote')
       .map((item) => {
-        let o = { ...item }
+        const o = { ...item }
         o.key = o.id
         return o
       })
 
-    let target_keys: string[] = hosts?.include || []
+    const target_keys: string[] = hosts?.include || []
 
     return (
       <Box className={styles.ln}>

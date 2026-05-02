@@ -117,7 +117,7 @@ const ConfigMenu = (props: IProps) => {
           <Menu.Item
             leftSection={<IconUpload size={iconSize} stroke={strokeWidth} />}
             onClick={async () => {
-              let r = await actions.exportData()
+              const r = await actions.exportData()
               if (r === null) {
                 return
               } else if (r === false) {
@@ -132,7 +132,7 @@ const ConfigMenu = (props: IProps) => {
           <Menu.Item
             leftSection={<IconDownload size={iconSize} stroke={strokeWidth} />}
             onClick={async () => {
-              let r = await actions.importData()
+              const r = await actions.importData()
               if (r === null) {
                 return
               } else if (r === true) {

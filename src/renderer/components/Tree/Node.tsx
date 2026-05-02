@@ -89,12 +89,12 @@ const Node = (props: INodeProps) => {
 
   const getTargetId = (el: HTMLElement | null): string | undefined => {
     if (!el) return
-    let id = el.getAttribute('data-id')
+    const id = el.getAttribute('data-id')
     return id || getTargetId(el.parentNode as HTMLElement)
   }
 
   const makeDraggingElement = (ne: DragEvent) => {
-    let el = el_dragging.current
+    const el = el_dragging.current
     if (!el) return
 
     el.style.display = 'block'
@@ -102,7 +102,7 @@ const Node = (props: INodeProps) => {
   }
 
   const onDragStart = (e: React.DragEvent) => {
-    let ne = e.nativeEvent
+    const ne = e.nativeEvent
     if (ne.dataTransfer) {
       ne.dataTransfer.dropEffect = 'move'
       ne.dataTransfer.effectAllowed = 'move'
@@ -127,7 +127,7 @@ const Node = (props: INodeProps) => {
 
     if (!is_dragging || !drag_source_id) return
 
-    let el_target = e.target as HTMLElement
+    const el_target = e.target as HTMLElement
     if (!el_target) return
 
     if (data.id === drag_source_id) return
@@ -135,7 +135,7 @@ const Node = (props: INodeProps) => {
 
     setDropTargetId(data.id)
 
-    let now = new Date().getTime()
+    const now = new Date().getTime()
     if (window._t_dragover_id !== data.id) {
       window._t_dragover_id = data.id
       window._t_dragover_ts = now
@@ -145,13 +145,13 @@ const Node = (props: INodeProps) => {
     }
 
     // where
-    let ne = e.nativeEvent
-    let h = el_target.offsetHeight
-    let y = ne.offsetY
+    const ne = e.nativeEvent
+    const h = el_target.offsetHeight
+    const y = ne.offsetY
     let where: DropWhereType | null = null
-    let h_2 = h >> 1
-    let h_4 = h >> 2
-    let h_threshold = attr.can_drop_in === false ? h_2 : h_4
+    const h_2 = h >> 1
+    const h_4 = h >> 2
+    const h_threshold = attr.can_drop_in === false ? h_2 : h_4
     if (y <= h_threshold) {
       if (attr.can_drop_before === false) {
         setDropWhere(null)
@@ -294,21 +294,21 @@ function diff<T>(a: T[], b: T[]): T[] {
 }
 
 function isEqual(prevProps: INodeProps, nextProps: INodeProps): boolean {
-  let { data, selected_ids, allowed_multiple_selection } = nextProps
+  const { data, selected_ids, allowed_multiple_selection } = nextProps
 
   if (!lodash.isEqual(prevProps.data, data)) {
     return false
   }
 
   // select
-  let prev_selected_ids = prevProps.selected_ids
+  const prev_selected_ids = prevProps.selected_ids
 
-  let diff_ids = diff<NodeIdType>(prev_selected_ids, selected_ids)
+  const diff_ids = diff<NodeIdType>(prev_selected_ids, selected_ids)
   if (diff_ids.length > 0) {
     if (allowed_multiple_selection) {
       return false
     } else {
-      for (let id of diff_ids) {
+      for (const id of diff_ids) {
         if (isSelfOrChild(data, id)) {
           return false
         }
@@ -321,7 +321,7 @@ function isEqual(prevProps: INodeProps, nextProps: INodeProps): boolean {
     return false
   }
 
-  let { drag_source_id, drop_target_id } = nextProps
+  const { drag_source_id, drop_target_id } = nextProps
   if (
     isSelfOrChild(data, drag_source_id) ||
     isSelfOrChild(data, drop_target_id) ||

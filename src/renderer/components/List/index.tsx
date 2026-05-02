@@ -71,7 +71,7 @@ const List = (props: Props) => {
       configs?.choice_mode ?? 0,
       configs?.multi_chose_folder_switch_all ?? false,
     )
-    let success = await writeHostsToSystem(new_list)
+    const success = await writeHostsToSystem(new_list)
     if (success) {
       console.log(lang.success)
       agent.broadcast(events.set_hosts_on_status, id, on)
@@ -88,7 +88,7 @@ const List = (props: Props) => {
       list = hosts_data.list
     }
 
-    let content: string = await actions.getContentOfList(list)
+    const content: string = await actions.getContentOfList(list)
     const result = await actions.setSystemHosts(content, options)
     if (result.success) {
       setList(list).catch((e) => console.error(e))
@@ -97,7 +97,7 @@ const List = (props: Props) => {
       // })
 
       if (current_hosts) {
-        let hosts = findItemById(list, current_hosts.id)
+        const hosts = findItemById(list, current_hosts.id)
         if (hosts) {
           agent.broadcast(events.set_hosts_on_status, current_hosts.id, hosts.on)
         }
@@ -144,7 +144,7 @@ const List = (props: Props) => {
 
       if (current_hosts && ids.includes(current_hosts.id)) {
         // 选中删除指定节点后的兄弟节点
-        let next_item = getNextSelectedItem(hosts_data.list, (i) => ids.includes(i.id))
+        const next_item = getNextSelectedItem(hosts_data.list, (i) => ids.includes(i.id))
         setCurrentHosts(next_item || null)
         setSelectedIds(next_item ? [next_item.id] : [])
       }
@@ -155,7 +155,7 @@ const List = (props: Props) => {
   useOnBroadcast(
     events.select_hosts,
     async (id: string, wait_ms: number = 0) => {
-      let hosts = findItemById(hosts_data.list, id)
+      const hosts = findItemById(hosts_data.list, id)
       if (!hosts) {
         if (wait_ms > 0) {
           setTimeout(() => {
@@ -174,8 +174,8 @@ const List = (props: Props) => {
   useOnBroadcast(events.reload_list, loadHostsData)
 
   useOnBroadcast(events.hosts_content_changed, async (hosts_id: string) => {
-    let list: IHostsListObject[] = await actions.getList()
-    let hosts = findItemById(list, hosts_id)
+    const list: IHostsListObject[] = await actions.getList()
+    const hosts = findItemById(list, hosts_id)
     if (!hosts || !hosts.on) return
 
     // 当前 hosts 是开启状态，且内容发生了变化

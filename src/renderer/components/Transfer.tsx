@@ -70,14 +70,14 @@ const Transfer = (props: Props) => {
   }
 
   const moveLeftToRight = () => {
-    let result = [...right_keys, ...left_selected_keys]
+    const result = [...right_keys, ...left_selected_keys]
     setRightKeys(result)
     setLeftSelectedKeys([])
     onChange && onChange(result)
   }
 
   const moveRightToLeft = () => {
-    let result = right_keys.filter((i) => !right_selected_keys.includes(i))
+    const result = right_keys.filter((i) => !right_selected_keys.includes(i))
     setRightKeys(result)
     setRightSelectedKeys([])
     onChange && onChange(result)

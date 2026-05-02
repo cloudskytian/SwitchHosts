@@ -21,7 +21,7 @@ const SwitchButton = (props: Props) => {
   const onClick = () => {
     if (disabled) return
 
-    let new_status = !is_on
+    const new_status = !is_on
     setIsOn(new_status)
     if (typeof onChange === 'function') {
       onChange(new_status)

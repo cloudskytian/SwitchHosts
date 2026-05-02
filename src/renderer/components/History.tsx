@@ -145,12 +145,12 @@ const History = () => {
       return
     }
 
-    let idx = list.findIndex((i) => i.id === id)
+    const idx = list.findIndex((i) => i.id === id)
     await actions.deleteHistory(id)
     setSelectedItem(undefined)
-    let list2 = await loadData()
+    const list2 = await loadData()
 
-    let next_item = list2[idx] || list2[idx - 1]
+    const next_item = list2[idx] || list2[idx - 1]
     if (next_item) {
       setSelectedItem(next_item)
     }
@@ -168,7 +168,7 @@ const History = () => {
     })
   })
 
-  let history_limit_values: number[] = [10, 50, 100, 500]
+  const history_limit_values: number[] = [10, 50, 100, 500]
   if (configs && !history_limit_values.includes(configs.history_limit)) {
     history_limit_values.push(configs.history_limit)
     history_limit_values.sort()

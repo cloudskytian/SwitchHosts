@@ -50,8 +50,8 @@ export default () => {
     setRightShow(configs.right_panel_show)
     setSystemFrame(configs.use_system_window_frame)
 
-    let theme = configs.theme
-    let cls = document.body.className
+    const theme = configs.theme
+    const cls = document.body.className
     document.body.className = cls.replace(/\btheme-\w+/gi, '')
     document.body.classList.add(`platform-${agent.platform}`, `theme-${theme}`)
     await agent.darkModeToggle(theme)

@@ -72,7 +72,7 @@ const Tree = (props: ITreeProps) => {
       } else {
         source_ids = [drag_source_id]
       }
-      let tree2 = treeMoveNode(tree, source_ids, drop_target_id, drop_where)
+      const tree2 = treeMoveNode(tree, source_ids, drop_target_id, drop_where)
       if (tree2) {
         setTree(tree2)
         onTreeChange(tree2)
@@ -91,8 +91,8 @@ const Tree = (props: ITreeProps) => {
   }
 
   const onNodeChange = (id: NodeIdType, data: Partial<ITreeNodeData>) => {
-    let tree2 = lodash.cloneDeep(tree)
-    let node = getNodeById(tree2, id)
+    const tree2 = lodash.cloneDeep(tree)
+    const node = getNodeById(tree2, id)
     if (!node) return
 
     Object.assign(node, data)
