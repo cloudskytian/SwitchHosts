@@ -56,34 +56,34 @@ const RightPanel = () => {
   const { lang } = useI18n()
   const { current_hosts, hosts_data, setCurrentHosts, isHostsInTrashcan, loadHostsData } =
     useHostsData()
-  const [rule_count, setRuleCount] = useState<number | null>(null)
-  const [is_refreshing, setIsRefreshing] = useState(false)
-  const [is_delete_confirm_open, setIsDeleteConfirmOpen] = useState(false)
-  const ref_loading_id = useRef<string | null>(null)
+  const [ruleCount, setRuleCount] = useState<number | null>(null)
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false)
+  const refLoadingId = useRef<string | null>(null)
 
   const hosts = current_hosts
   const type = hosts?.type || 'local'
-  const has_content = !!hosts && (type === 'local' || type === 'remote')
+  const hasContent = !!hosts && (type === 'local' || type === 'remote')
 
   const loadRuleCount = async (id: string) => {
-    ref_loading_id.current = id
+    refLoadingId.current = id
     try {
       const content: string = (await actions.getHostsContent(id)) || ''
-      if (ref_loading_id.current !== id) return
+      if (refLoadingId.current !== id) return
       setRuleCount(countRules(content))
     } catch {
-      if (ref_loading_id.current !== id) return
+      if (refLoadingId.current !== id) return
       setRuleCount(null)
     }
   }
 
   useEffect(() => {
     if (!hosts) {
-      ref_loading_id.current = null
+      refLoadingId.current = null
       setRuleCount(null)
       return
     }
-    if (has_content) {
+    if (hasContent) {
       loadRuleCount(hosts.id)
     } else {
       setRuleCount(null)
@@ -93,16 +93,16 @@ const RightPanel = () => {
   useOnBroadcast(
     events.hosts_content_changed,
     (id: string) => {
-      if (hosts && id === hosts.id && has_content) loadRuleCount(id)
+      if (hosts && id === hosts.id && hasContent) loadRuleCount(id)
     },
-    [hosts?.id, has_content],
+    [hosts?.id, hasContent],
   )
 
   useOnBroadcast(
     events.hosts_refreshed,
     (refreshed: IHostsListObject) => {
       if (!hosts || refreshed.id !== hosts.id) return
-      if (has_content) loadRuleCount(hosts.id)
+      if (hasContent) loadRuleCount(hosts.id)
       if (
         refreshed.last_refresh !== hosts.last_refresh ||
         refreshed.last_refresh_ms !== hosts.last_refresh_ms
@@ -114,7 +114,7 @@ const RightPanel = () => {
         })
       }
     },
-    [hosts, has_content],
+    [hosts, hasContent],
   )
 
   const onEdit = () => {
@@ -206,13 +206,13 @@ const RightPanel = () => {
     )
   }
 
-  const folder_mode_label: Record<FolderModeType, string> = {
+  const folderModeLabel: Record<FolderModeType, string> = {
     0: lang.choice_mode_default,
     1: lang.choice_mode_single,
     2: lang.choice_mode_multiple,
   }
 
-  const include_items =
+  const includeItems =
     type === 'group'
       ? (hosts.include || []).map((id) => ({
           id,
@@ -220,7 +220,7 @@ const RightPanel = () => {
         }))
       : []
 
-  const in_trashcan = isHostsInTrashcan(hosts.id)
+  const inTrashcan = isHostsInTrashcan(hosts.id)
 
   return (
     <div className={styles.root}>
@@ -232,7 +232,7 @@ const RightPanel = () => {
               {hosts.title || lang.untitled}
             </Text>
           </Group>
-          {in_trashcan ? null : (
+          {inTrashcan ? null : (
             <Button
               size="compact-sm"
               variant="subtle"
@@ -246,8 +246,8 @@ const RightPanel = () => {
 
         <Stack gap="8px" className={styles.section}>
           <InfoRow label={lang.hosts_type} value={lang[type] || type} />
-          {has_content && rule_count != null ? (
-            <InfoRow label={lang.rules} value={String(rule_count)} />
+          {hasContent && ruleCount != null ? (
+            <InfoRow label={lang.rules} value={String(ruleCount)} />
           ) : null}
         </Stack>
 
@@ -264,7 +264,7 @@ const RightPanel = () => {
               }
               mono
             />
-            {in_trashcan ? null : (
+            {inTrashcan ? null : (
               <InfoRow
                 label={lang.auto_refresh}
                 value={formatInterval(hosts.refresh_interval || 0, lang)}
@@ -274,13 +274,13 @@ const RightPanel = () => {
               label={lang.last_refresh.replace(/[:：]\s*$/, '')}
               value={hosts.last_refresh || 'N/A'}
             />
-            {in_trashcan ? null : (
+            {inTrashcan ? null : (
               <Button
                 size="compact-sm"
                 variant="light"
                 leftSection={<IconRefresh size={14} stroke={1.5} />}
-                loading={is_refreshing}
-                disabled={is_refreshing}
+                loading={isRefreshing}
+                disabled={isRefreshing}
                 onClick={onRefresh}
                 className={styles.refresh_btn}
               >
@@ -294,7 +294,7 @@ const RightPanel = () => {
           <Stack gap="8px" className={styles.section}>
             <InfoRow
               label={lang.choice_mode}
-              value={folder_mode_label[(hosts.folder_mode || 0) as FolderModeType]}
+              value={folderModeLabel[(hosts.folder_mode || 0) as FolderModeType]}
             />
           </Stack>
         ) : null}
@@ -302,13 +302,13 @@ const RightPanel = () => {
         {type === 'group' ? (
           <div className={styles.section}>
             <Text className={styles.section_title}>
-              {lang.content} ({include_items.length})
+              {lang.content} ({includeItems.length})
             </Text>
-            {include_items.length === 0 ? (
+            {includeItems.length === 0 ? (
               <Text className={styles.muted}>—</Text>
             ) : (
               <ul className={styles.include_list}>
-                {include_items.map(({ id, item }) => (
+                {includeItems.map(({ id, item }) => (
                   <li key={id}>
                     <Group gap="6px" wrap="nowrap">
                       <ItemIcon type={item?.type} />
@@ -323,7 +323,7 @@ const RightPanel = () => {
           </div>
         ) : null}
 
-        {in_trashcan ? (
+        {inTrashcan ? (
           <div className={styles.footer}>
             <Button
               variant="outline"
@@ -346,7 +346,7 @@ const RightPanel = () => {
       <div className={styles.status_bar} />
 
       <ConfirmModal
-        opened={is_delete_confirm_open}
+        opened={isDeleteConfirmOpen}
         onClose={() => setIsDeleteConfirmOpen(false)}
         onConfirm={onPermanentDelete}
         title={lang.hosts_delete}

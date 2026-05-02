@@ -44,14 +44,14 @@ interface HarnessProps {
 }
 
 const Harness = ({ initial_data, initial_selected = [], onChange }: HarnessProps) => {
-  const [selected_ids, setSelectedIds] = useState<string[]>(initial_selected)
+  const [selectedIds, setSelectedIds] = useState<string[]>(initial_selected)
   return (
     <Tree
       data={initial_data}
-      selected_ids={selected_ids}
+      selectedIds={selectedIds}
       onSelect={setSelectedIds}
       onChange={onChange}
-      allowed_multiple_selection
+      allowedMultipleSelection
       nodeRender={(n) => <span data-testid={`label-${n.id}`}>{n.title || n.id}</span>}
     />
   )

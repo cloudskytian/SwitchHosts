@@ -20,7 +20,7 @@ const ImportFromUrl = (props: Props) => {
   const { lang } = useI18n()
   const { loadHostsData, setCurrentHosts } = useHostsData()
   const [url, setUrl] = useState('')
-  const ipt_ref = React.useRef<HTMLInputElement>(null)
+  const iptRef = React.useRef<HTMLInputElement>(null)
 
   const onCancel = () => {
     setIsShow(false)
@@ -59,7 +59,7 @@ const ImportFromUrl = (props: Props) => {
         <div style={{ padding: 'var(--mantine-spacing-md)', paddingBottom: 24 }}>
           <div className={styles.label}>{lang.import_from_url}</div>
           <TextInput
-            ref={ipt_ref}
+            ref={iptRef}
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             autoFocus={true}

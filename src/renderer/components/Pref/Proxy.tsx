@@ -16,9 +16,9 @@ interface IProps {
 const General = (props: IProps) => {
   const { data, onChange } = props
   const { lang } = useI18n()
-  const [is_use, setIsUse] = useState(data.use_proxy)
+  const [isUse, setIsUse] = useState(data.use_proxy)
 
-  const label_width = 80
+  const labelWidth = 80
 
   return (
     <Stack gap="16px">
@@ -27,9 +27,9 @@ const General = (props: IProps) => {
           <Checkbox
             checked={data.use_proxy}
             onChange={(e) => {
-              const is_use = e.target.checked
-              setIsUse(is_use)
-              onChange({ use_proxy: is_use })
+              const isUse = e.target.checked
+              setIsUse(isUse)
+              onChange({ use_proxy: isUse })
             }}
             label={lang.use_proxy}
           />
@@ -38,9 +38,9 @@ const General = (props: IProps) => {
 
       <Box w="100%">
         <Group gap="8px">
-          <Box w={label_width}>{lang.protocol}</Box>
+          <Box w={labelWidth}>{lang.protocol}</Box>
           <NativeSelect
-            disabled={!is_use}
+            disabled={!isUse}
             value={data.proxy_protocol}
             onChange={(e) => onChange({ proxy_protocol: e.target.value as ProtocolType })}
             data={[
@@ -54,10 +54,10 @@ const General = (props: IProps) => {
 
       <Box w="100%">
         <Group gap="8px">
-          <Box w={label_width}>{lang.host}</Box>
+          <Box w={labelWidth}>{lang.host}</Box>
           <TextInput
             style={{ width: '200px' }}
-            disabled={!is_use}
+            disabled={!isUse}
             value={data.proxy_host}
             onChange={(e) => onChange({ proxy_host: e.target.value })}
           />
@@ -66,10 +66,10 @@ const General = (props: IProps) => {
 
       <Box w="100%">
         <Group gap="8px">
-          <Box w={label_width}>{lang.port}</Box>
+          <Box w={labelWidth}>{lang.port}</Box>
           <TextInput
             style={{ width: '80px' }}
-            disabled={!is_use}
+            disabled={!isUse}
             type="number"
             value={data.proxy_port || ''}
             onChange={(e) => onChange({ proxy_port: parseInt(e.target.value) || 0 })}

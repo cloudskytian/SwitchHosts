@@ -27,26 +27,26 @@ interface INodeProps {
   nodeDropInClassName?: string
   nodeSelectedClassName?: string
   nodeCollapseArrowClassName?: string
-  drag_source_id: NodeIdType | null
-  drop_target_id: NodeIdType | null
-  drag_target_where: DropWhereType | null
+  dragSourceId: NodeIdType | null
+  dropTargetId: NodeIdType | null
+  dragTargetWhere: DropWhereType | null
   onDragStart: (id: NodeIdType) => void
   onDragEnd: () => void
   setDropTargetId: (id: NodeIdType | null) => void
   setDropWhere: (where: DropWhereType | null) => void
-  selected_ids: NodeIdType[]
-  onSelect: (id: NodeIdType, multiple_type?: MultipleSelectType) => void
+  selectedIds: NodeIdType[]
+  onSelect: (id: NodeIdType, multipleType?: MultipleSelectType) => void
   level: number
-  is_dragging: boolean
+  isDragging: boolean
   render?: (data: ITreeNodeData, update: NodeUpdate) => React.ReactElement | null
-  draggingNodeRender?: (data: ITreeNodeData, source_ids: string[]) => React.ReactElement
+  draggingNodeRender?: (data: ITreeNodeData, sourceIds: string[]) => React.ReactElement
   collapseArrow?: string | React.ReactElement
   onChange: (id: NodeIdType, data: Partial<ITreeNodeData>) => void
-  indent_px?: number
+  indentPx?: number
   nodeAttr?: (node: ITreeNodeData) => Partial<ITreeNodeData>
-  has_no_child: boolean
-  no_child_no_indent?: boolean
-  allowed_multiple_selection?: boolean
+  hasNoChild: boolean
+  noChildNoIndent?: boolean
+  allowedMultipleSelection?: boolean
 }
 
 const Node = (props: INodeProps) => {
@@ -54,15 +54,15 @@ const Node = (props: INodeProps) => {
     data,
     setDropTargetId,
     setDropWhere,
-    drag_source_id,
-    drop_target_id,
-    drag_target_where,
+    dragSourceId,
+    dropTargetId,
+    dragTargetWhere,
     level,
-    is_dragging,
+    isDragging,
     render,
     draggingNodeRender,
-    indent_px,
-    selected_ids,
+    indentPx,
+    selectedIds,
     onSelect,
     onChange,
     nodeAttr,
@@ -70,20 +70,20 @@ const Node = (props: INodeProps) => {
     nodeCollapseArrowClassName,
   } = props
 
-  const el_node = useRef<HTMLDivElement>(null)
-  const el_dragging = useRef<HTMLDivElement>(null)
+  const elNode = useRef<HTMLDivElement>(null)
+  const elDragging = useRef<HTMLDivElement>(null)
 
   // JS-tracked hover instead of CSS :hover because WebKit leaves
   // :hover stuck on rows the cursor passed over during a drag — the
   // state doesn't even clear when React replaces the DOM.
-  const [is_hovered, setIsHovered] = useState(false)
+  const [isHovered, setIsHovered] = useState(false)
 
-  // Clear hover at every is_dragging boundary so a row that was
+  // Clear hover at every isDragging boundary so a row that was
   // under the cursor when drag began doesn't stay highlighted, and
   // any state accumulated mid-drag is dropped on dragend.
   useEffect(() => {
     setIsHovered(false)
-  }, [is_dragging])
+  }, [isDragging])
 
   const attr = nodeAttr ? nodeAttr(data) : data
 
@@ -94,7 +94,7 @@ const Node = (props: INodeProps) => {
   }
 
   const makeDraggingElement = (ne: DragEvent) => {
-    const el = el_dragging.current
+    const el = elDragging.current
     if (!el) return
 
     el.style.display = 'block'
@@ -125,13 +125,13 @@ const Node = (props: INodeProps) => {
     e.preventDefault()
     e.stopPropagation()
 
-    if (!is_dragging || !drag_source_id) return
+    if (!isDragging || !dragSourceId) return
 
-    const el_target = e.target as HTMLElement
-    if (!el_target) return
+    const elTarget = e.target as HTMLElement
+    if (!elTarget) return
 
-    if (data.id === drag_source_id) return
-    if (isChildOf(props.tree, data.id, drag_source_id)) return
+    if (data.id === dragSourceId) return
+    if (isChildOf(props.tree, data.id, dragSourceId)) return
 
     setDropTargetId(data.id)
 
@@ -146,19 +146,19 @@ const Node = (props: INodeProps) => {
 
     // where
     const ne = e.nativeEvent
-    const h = el_target.offsetHeight
+    const h = elTarget.offsetHeight
     const y = ne.offsetY
     let where: DropWhereType | null = null
-    const h_2 = h >> 1
-    const h_4 = h >> 2
-    const h_threshold = attr.can_drop_in === false ? h_2 : h_4
-    if (y <= h_threshold) {
+    const h2 = h >> 1
+    const h4 = h >> 2
+    const hThreshold = attr.can_drop_in === false ? h2 : h4
+    if (y <= hThreshold) {
       if (attr.can_drop_before === false) {
         setDropWhere(null)
         return
       }
       where = 'before'
-    } else if (y >= h - h_threshold) {
+    } else if (y >= h - hThreshold) {
       if (attr.can_drop_after === false) {
         setDropWhere(null)
         return
@@ -186,43 +186,43 @@ const Node = (props: INodeProps) => {
 
     window._t_dragover_id = ''
 
-    el_dragging.current && (el_dragging.current.style.display = 'none')
+    elDragging.current && (elDragging.current.style.display = 'none')
   }
 
   const onUpdate = (kv: Partial<ITreeNodeData>) => {
     onChange(data.id, kv)
   }
 
-  const is_drag_source = drag_source_id === data.id
-  const is_drop_target = drop_target_id === data.id
-  const is_selected = selected_ids.includes(data.id)
-  const is_parent_is_drag_source = drag_source_id
-    ? isChildOf(props.tree, data.id, drag_source_id)
+  const isDragSource = dragSourceId === data.id
+  const isDropTarget = dropTargetId === data.id
+  const isSelected = selectedIds.includes(data.id)
+  const isParentIsDragSource = dragSourceId
+    ? isChildOf(props.tree, data.id, dragSourceId)
     : false
-  const has_children = Array.isArray(data.children) && data.children.length > 0
+  const hasChildren = Array.isArray(data.children) && data.children.length > 0
 
   return (
     <>
       <div
-        ref={el_node}
+        ref={elNode}
         className={clsx(
           styles.node,
-          is_dragging && styles.is_dragging,
-          (is_drag_source || is_parent_is_drag_source) && styles.is_source,
-          is_drop_target && drag_target_where === 'before' && styles.drop_before,
-          is_drop_target &&
-            drag_target_where === 'in' &&
+          isDragging && styles.isDragging,
+          (isDragSource || isParentIsDragSource) && styles.is_source,
+          isDropTarget && dragTargetWhere === 'before' && styles.drop_before,
+          isDropTarget &&
+            dragTargetWhere === 'in' &&
             (props.nodeDropInClassName || styles.drop_in),
-          is_drop_target && drag_target_where === 'after' && styles.drop_after,
-          is_selected && (props.nodeSelectedClassName || styles.selected),
+          isDropTarget && dragTargetWhere === 'after' && styles.drop_after,
+          isSelected && (props.nodeSelectedClassName || styles.selected),
           nodeClassName,
         )}
-        data-selected={is_selected ? '1' : '0'}
-        data-hovered={is_hovered ? '1' : '0'}
+        data-selected={isSelected ? '1' : '0'}
+        data-hovered={isHovered ? '1' : '0'}
         data-id={data.id}
         draggable={attr.can_drag !== false}
         onMouseEnter={() => {
-          if (!is_dragging) setIsHovered(true)
+          if (!isDragging) setIsHovered(true)
         }}
         onMouseLeave={() => setIsHovered(false)}
         onDragStart={onDragStart}
@@ -235,26 +235,26 @@ const Node = (props: INodeProps) => {
           if (attr.can_select === false) {
             return
           }
-          let multiple_type: MultipleSelectType = 0
+          let multipleType: MultipleSelectType = 0
           if (e.shiftKey) {
-            multiple_type = 2
+            multipleType = 2
           } else if (e.metaKey) {
-            multiple_type = 1
+            multipleType = 1
           }
-          onSelect(data.id, multiple_type)
+          onSelect(data.id, multipleType)
         }}
         style={{
-          paddingLeft: level * (indent_px || 20) + 4,
+          paddingLeft: level * (indentPx || 20) + 4,
         }}
       >
         <div
           className={clsx(
             styles.content,
-            props.has_no_child && props.no_child_no_indent && styles.no_children,
+            props.hasNoChild && props.noChildNoIndent && styles.no_children,
           )}
         >
           <div className={styles.ln_header} data-role="tree-node-header">
-            {has_children ? (
+            {hasChildren ? (
               <div
                 className={clsx(
                   styles.arrow,
@@ -276,11 +276,11 @@ const Node = (props: INodeProps) => {
         </div>
       </div>
       {draggingNodeRender && (
-        <div ref={el_dragging} className={styles.for_dragging}>
-          {draggingNodeRender(data, selected_ids.includes(data.id) ? selected_ids : [data.id])}
+        <div ref={elDragging} className={styles.for_dragging}>
+          {draggingNodeRender(data, selectedIds.includes(data.id) ? selectedIds : [data.id])}
         </div>
       )}
-      {has_children && data.children && !data.is_collapsed
+      {hasChildren && data.children && !data.is_collapsed
         ? data.children.map((node) => (
             <Node {...props} key={node.id} data={node} level={level + 1} />
           ))
@@ -294,21 +294,21 @@ function diff<T>(a: T[], b: T[]): T[] {
 }
 
 function isEqual(prevProps: INodeProps, nextProps: INodeProps): boolean {
-  const { data, selected_ids, allowed_multiple_selection } = nextProps
+  const { data, selectedIds, allowedMultipleSelection } = nextProps
 
   if (!lodash.isEqual(prevProps.data, data)) {
     return false
   }
 
   // select
-  const prev_selected_ids = prevProps.selected_ids
+  const prevSelectedIds = prevProps.selectedIds
 
-  const diff_ids = diff<NodeIdType>(prev_selected_ids, selected_ids)
-  if (diff_ids.length > 0) {
-    if (allowed_multiple_selection) {
+  const diffIds = diff<NodeIdType>(prevSelectedIds, selectedIds)
+  if (diffIds.length > 0) {
+    if (allowedMultipleSelection) {
       return false
     } else {
-      for (const id of diff_ids) {
+      for (const id of diffIds) {
         if (isSelfOrChild(data, id)) {
           return false
         }
@@ -317,16 +317,16 @@ function isEqual(prevProps: INodeProps, nextProps: INodeProps): boolean {
   }
 
   // drag
-  if (prevProps.is_dragging !== nextProps.is_dragging) {
+  if (prevProps.isDragging !== nextProps.isDragging) {
     return false
   }
 
-  const { drag_source_id, drop_target_id } = nextProps
+  const { dragSourceId, dropTargetId } = nextProps
   if (
-    isSelfOrChild(data, drag_source_id) ||
-    isSelfOrChild(data, drop_target_id) ||
-    isSelfOrChild(data, prevProps.drag_source_id) ||
-    isSelfOrChild(data, prevProps.drop_target_id)
+    isSelfOrChild(data, dragSourceId) ||
+    isSelfOrChild(data, dropTargetId) ||
+    isSelfOrChild(data, prevProps.dragSourceId) ||
+    isSelfOrChild(data, prevProps.dropTargetId)
   ) {
     return false
   }

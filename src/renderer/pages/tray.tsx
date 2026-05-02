@@ -36,7 +36,7 @@ export default () => {
     <div className={styles.root}>
       <h1 className={styles.header}>SwitchHosts</h1>
       <div className={styles.body}>
-        <List is_tray={true} />
+        <List isTray={true} />
       </div>
       <div className={styles.footer}>
         <span onClick={showMain}>

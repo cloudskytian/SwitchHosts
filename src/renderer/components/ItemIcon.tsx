@@ -14,11 +14,11 @@ import {
 
 interface Props {
   type?: string
-  is_collapsed?: boolean
+  isCollapsed?: boolean
 }
 
 const ItemIcon = (props: Props) => {
-  const { type, is_collapsed } = props
+  const { type, isCollapsed } = props
 
   const iconAttrs = {
     size: 16,
@@ -27,7 +27,7 @@ const ItemIcon = (props: Props) => {
 
   switch (type) {
     case 'folder':
-      return is_collapsed ? <IconFolder {...iconAttrs} /> : <IconFolder {...iconAttrs} />
+      return isCollapsed ? <IconFolder {...iconAttrs} /> : <IconFolder {...iconAttrs} />
     case 'remote':
       return <IconWorld {...iconAttrs} />
     case 'group':

@@ -22,19 +22,19 @@ import styles from './index.module.scss'
 import ListItem from './ListItem'
 
 interface Props {
-  is_tray?: boolean
+  isTray?: boolean
 }
 
 const List = (props: Props) => {
-  const { is_tray } = props
+  const { isTray } = props
   const { hosts_data, loadHostsData, setList, current_hosts, setCurrentHosts } = useHostsData()
   const { configs } = useConfigs()
   const { lang } = useI18n()
-  const [selected_ids, setSelectedIds] = useState<string[]>([current_hosts?.id || '0'])
-  const [show_list, setShowList] = useState<IHostsListObject[]>([])
+  const [selectedIds, setSelectedIds] = useState<string[]>([current_hosts?.id || '0'])
+  const [showList, setShowList] = useState<IHostsListObject[]>([])
 
   useEffect(() => {
-    if (!is_tray) {
+    if (!isTray) {
       setShowList([
         {
           id: '0',
@@ -49,11 +49,11 @@ const List = (props: Props) => {
   }, [hosts_data])
 
   useEffect(() => {
-    if (is_tray || !current_hosts) return
+    if (isTray || !current_hosts) return
     if (!hosts_data.trashcan.find((item) => item.data.id === current_hosts.id)) return
 
     setSelectedIds([])
-  }, [current_hosts, hosts_data.trashcan, is_tray])
+  }, [current_hosts, hosts_data.trashcan, isTray])
 
   const onToggleItem = async (id: string, on: boolean) => {
     console.log(`writeMode: ${configs?.write_mode}`)
@@ -64,14 +64,14 @@ const List = (props: Props) => {
       return
     }
 
-    const new_list = setOnStateOfItem(
+    const newList = setOnStateOfItem(
       hosts_data.list,
       id,
       on,
       configs?.choice_mode ?? 0,
       configs?.multi_chose_folder_switch_all ?? false,
     )
-    const success = await writeHostsToSystem(new_list)
+    const success = await writeHostsToSystem(newList)
     if (success) {
       console.log(lang.success)
       agent.broadcast(events.set_hosts_on_status, id, on)
@@ -105,7 +105,7 @@ const List = (props: Props) => {
     } else {
       console.log(result)
       loadHostsData().catch((e) => console.log(e))
-      let err_desc = lang.fail
+      let errDesc = lang.fail
 
       // let body: string = lang.no_access_to_hosts
       if (result.code === 'no_access') {
@@ -114,13 +114,13 @@ const List = (props: Props) => {
         }
         // } else {
         // body = result.message || 'Unknown error!'
-        err_desc = lang.no_access_to_hosts
+        errDesc = lang.no_access_to_hosts
       }
 
       // new Notification(lang.fail, {
       //   body,
       // })
-      console.error(err_desc)
+      console.error(errDesc)
     }
 
     agent.broadcast(events.tray_list_updated)
@@ -128,7 +128,7 @@ const List = (props: Props) => {
     return result.success
   }
 
-  if (!is_tray) {
+  if (!isTray) {
     useOnBroadcast(events.toggle_item, onToggleItem, [hosts_data, configs])
     useOnBroadcast(events.write_hosts_to_system, writeHostsToSystem, [hosts_data])
   } else {
@@ -144,9 +144,9 @@ const List = (props: Props) => {
 
       if (current_hosts && ids.includes(current_hosts.id)) {
         // 选中删除指定节点后的兄弟节点
-        const next_item = getNextSelectedItem(hosts_data.list, (i) => ids.includes(i.id))
-        setCurrentHosts(next_item || null)
-        setSelectedIds(next_item ? [next_item.id] : [])
+        const nextItem = getNextSelectedItem(hosts_data.list, (i) => ids.includes(i.id))
+        setCurrentHosts(nextItem || null)
+        setSelectedIds(nextItem ? [nextItem.id] : [])
       }
     },
     [current_hosts, hosts_data],
@@ -154,12 +154,12 @@ const List = (props: Props) => {
 
   useOnBroadcast(
     events.select_hosts,
-    async (id: string, wait_ms: number = 0) => {
+    async (id: string, waitMs: number = 0) => {
       const hosts = findItemById(hosts_data.list, id)
       if (!hosts) {
-        if (wait_ms > 0) {
+        if (waitMs > 0) {
           setTimeout(() => {
-            agent.broadcast(events.select_hosts, id, wait_ms - 50)
+            agent.broadcast(events.select_hosts, id, waitMs - 50)
           }, 50)
         }
         return
@@ -173,9 +173,9 @@ const List = (props: Props) => {
 
   useOnBroadcast(events.reload_list, loadHostsData)
 
-  useOnBroadcast(events.hosts_content_changed, async (hosts_id: string) => {
+  useOnBroadcast(events.hosts_content_changed, async (hostsId: string) => {
     const list: IHostsListObject[] = await actions.getList()
-    const hosts = findItemById(list, hosts_id)
+    const hosts = findItemById(list, hostsId)
     if (!hosts || !hosts.on) return
 
     // 当前 hosts 是开启状态，且内容发生了变化
@@ -190,11 +190,11 @@ const List = (props: Props) => {
     <div className={styles.root}>
       {/*<SystemHostsItem/>*/}
       <Tree
-        data={show_list}
-        selected_ids={selected_ids}
+        data={showList}
+        selectedIds={selectedIds}
         onChange={(list) => {
           setShowList(list)
-          const new_user_list = list.filter((i) => !i.is_sys)
+          const newUserList = list.filter((i) => !i.is_sys)
 
           const enabledIdSeq = (l: IHostsListObject[]) =>
             flatten(l)
@@ -203,12 +203,12 @@ const List = (props: Props) => {
               .join('\n')
 
           if (
-            enabledIdSeq(hosts_data.list) !== enabledIdSeq(new_user_list) &&
+            enabledIdSeq(hosts_data.list) !== enabledIdSeq(newUserList) &&
             configs?.write_mode
           ) {
-            writeHostsToSystem(new_user_list).catch((e) => console.error(e))
+            writeHostsToSystem(newUserList).catch((e) => console.error(e))
           } else {
-            setList(new_user_list).catch((e) => console.error(e))
+            setList(newUserList).catch((e) => console.error(e))
           }
         }}
         onSelect={(ids: string[]) => {
@@ -216,7 +216,7 @@ const List = (props: Props) => {
           setSelectedIds(ids)
         }}
         nodeRender={(data) => (
-          <ListItem key={data.id} data={data} is_tray={is_tray} selected_ids={selected_ids} />
+          <ListItem key={data.id} data={data} isTray={isTray} selectedIds={selectedIds} />
         )}
         collapseArrow={
           <div
@@ -233,7 +233,7 @@ const List = (props: Props) => {
         }
         nodeAttr={(item) => {
           return {
-            can_drag: !item.is_sys && !is_tray,
+            can_drag: !item.is_sys && !isTray,
             can_drop_before: !item.is_sys,
             can_drop_in: item.type === 'folder',
             can_drop_after: !item.is_sys,
@@ -245,14 +245,14 @@ const List = (props: Props) => {
               <span className={clsx(styles.icon, data.type === 'folder' && styles.folder)}>
                 <ItemIcon
                   type={data.is_sys ? 'system' : data.type}
-                  is_collapsed={data.is_collapsed}
+                  isCollapsed={data.is_collapsed}
                 />
               </span>
               <span>
                 {data.title || lang.untitled}
-                {selected_ids.length > 1 ? (
+                {selectedIds.length > 1 ? (
                   <span className={styles.items_count}>
-                    {selected_ids.length} {lang.items}
+                    {selectedIds.length} {lang.items}
                   </span>
                 ) : null}
               </span>
@@ -263,7 +263,7 @@ const List = (props: Props) => {
         nodeDropInClassName={styles.node_drop_in}
         nodeSelectedClassName={styles.node_selected}
         nodeCollapseArrowClassName={styles.arrow}
-        allowed_multiple_selection={true}
+        allowedMultipleSelection={true}
       />
     </div>
   )

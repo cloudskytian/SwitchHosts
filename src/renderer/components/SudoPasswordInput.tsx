@@ -17,7 +17,7 @@ const SudoPasswordInput = () => {
   const [opened, setOpened] = useState(false)
   const [pswd, setPswd] = useState('')
   const [tmpList, setTmpList] = useState<IHostsListObject[] | undefined>()
-  const ipt_ref = React.useRef<HTMLInputElement>(null)
+  const iptRef = React.useRef<HTMLInputElement>(null)
 
   const onCancel = () => {
     setOpened(false)
@@ -48,7 +48,7 @@ const SudoPasswordInput = () => {
           {lang.colon}
         </div>
         <PasswordInput
-          ref={ipt_ref}
+          ref={iptRef}
           value={pswd}
           onChange={(e) => setPswd(e.target.value)}
           autoFocus={true}

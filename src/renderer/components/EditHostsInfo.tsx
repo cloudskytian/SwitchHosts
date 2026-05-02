@@ -33,9 +33,9 @@ const EditHostsInfo = () => {
   const { lang } = useI18n()
   const [hosts, setHosts] = useState<IHostsListObject | null>(null)
   const { hosts_data, setList, current_hosts, setCurrentHosts } = useHostsData()
-  const [is_show, setIsShow] = useState(false)
-  const [is_add, setIsAdd] = useState(true)
-  const [is_refreshing, setIsRefreshing] = useState(false)
+  const [isShow, setIsShow] = useState(false)
+  const [isAdd, setIsAdd] = useState(true)
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
   const onCancel = () => {
     setHosts(null)
@@ -45,14 +45,14 @@ const EditHostsInfo = () => {
   const onSave = async () => {
     const data: Omit<IHostsListObject, 'id'> & { id?: string } = { ...hosts }
 
-    const keys_to_trim = ['title', 'url']
-    keys_to_trim.map((k) => {
+    const keysToTrim = ['title', 'url']
+    keysToTrim.map((k) => {
       if (data[k]) {
         data[k] = data[k].trim()
       }
     })
 
-    if (is_add) {
+    if (isAdd) {
       const h: IHostsListObject = {
         ...data,
         id: uuidv4(),
@@ -137,7 +137,7 @@ const EditHostsInfo = () => {
             ]}
             maw={160}
           />
-          {is_add ? null : (
+          {isAdd ? null : (
             <Box className={styles.refresh_info} mt="8px">
               <span>
                 {lang.last_refresh}
@@ -146,7 +146,7 @@ const EditHostsInfo = () => {
               <Button
                 size="sm"
                 variant="subtle"
-                disabled={is_refreshing}
+                disabled={isRefreshing}
                 onClick={() => {
                   if (!hosts) return
 
@@ -194,7 +194,7 @@ const EditHostsInfo = () => {
   const forGroup = (): React.ReactElement => {
     const list = hostsFn.flatten(hosts_data.list)
 
-    const source_list: IHostsListObject[] = list
+    const sourceList: IHostsListObject[] = list
       .filter((item) => !item.type || item.type === 'local' || item.type === 'remote')
       .map((item) => {
         const o = { ...item }
@@ -202,17 +202,17 @@ const EditHostsInfo = () => {
         return o
       })
 
-    const target_keys: string[] = hosts?.include || []
+    const targetKeys: string[] = hosts?.include || []
 
     return (
       <Box className={styles.ln}>
         <Text mb="8px">{lang.content}</Text>
         <Transfer
-          dataSource={source_list}
-          targetKeys={target_keys}
+          dataSource={sourceList}
+          targetKeys={targetKeys}
           render={renderTransferItem}
-          onChange={(next_target_keys) => {
-            onUpdate({ include: next_target_keys })
+          onChange={(nextTargetKeys) => {
+            onUpdate({ include: nextTargetKeys })
           }}
         />
       </Box>
@@ -241,13 +241,13 @@ const EditHostsInfo = () => {
 
   return (
     <SideDrawer
-      opened={is_show}
+      opened={isShow}
       onClose={onCancel}
       size="lg"
       title={
         <Group gap="8px">
           <BiEdit />
-          <Box>{is_add ? lang.hosts_add : lang.hosts_edit}</Box>
+          <Box>{isAdd ? lang.hosts_add : lang.hosts_edit}</Box>
         </Group>
       }
       scrollAreaStyle={{
@@ -256,7 +256,7 @@ const EditHostsInfo = () => {
       footer={
         <SimpleGrid cols={2} style={{ width: '100%', alignItems: 'center' }}>
           <Box>
-            {is_add ? null : (
+            {isAdd ? null : (
               <Button
                 variant="outline"
                 disabled={!hosts}
@@ -295,7 +295,7 @@ const EditHostsInfo = () => {
                 <Radio
                   key={type}
                   value={type}
-                  disabled={!is_add}
+                  disabled={!isAdd}
                   label={
                     <Group gap="4px" wrap="nowrap">
                       <ItemIcon type={type} />

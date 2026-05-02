@@ -27,7 +27,7 @@ const TrashcanItem = (props: Props) => {
   const { data } = props
   const { lang } = useI18n()
   const { loadHostsData } = useHostsData()
-  const [is_delete_confirm_open, setIsDeleteConfirmOpen] = useState(false)
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false)
 
   const doPermanentDelete = () => {
     actions
@@ -67,7 +67,7 @@ const TrashcanItem = (props: Props) => {
       })
   }
 
-  const menu_for_item = new PopupMenu([
+  const menuForItem = new PopupMenu([
     {
       label: lang.trashcan_restore,
       click() {
@@ -89,21 +89,21 @@ const TrashcanItem = (props: Props) => {
     <div
       className={styles.root}
       onContextMenu={(e) => {
-        menu_for_item.show()
+        menuForItem.show()
         e.preventDefault()
         e.stopPropagation()
       }}
     >
       <div className={styles.title}>
         <span className={list_item_styles.icon}>
-          <ItemIcon type={data.type} is_collapsed={true} />
+          <ItemIcon type={data.type} isCollapsed={true} />
         </span>
 
         {data.data.title || lang.untitled}
       </div>
 
       <ConfirmModal
-        opened={is_delete_confirm_open}
+        opened={isDeleteConfirmOpen}
         onClose={() => setIsDeleteConfirmOpen(false)}
         onConfirm={doPermanentDelete}
         title={lang.hosts_delete}

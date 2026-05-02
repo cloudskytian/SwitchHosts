@@ -20,7 +20,7 @@ interface ITransferSourceObject {
 
 interface IListProps {
   data: ITransferSourceObject[]
-  selected_keys: IdType[]
+  selectedKeys: IdType[]
   setSelectedKeys: (ids: IdType[]) => void
 }
 
@@ -28,22 +28,22 @@ interface Props {
   dataSource: ITransferSourceObject[]
   targetKeys: IdType[]
   render?: (obj: ITransferSourceObject) => React.ReactElement
-  onChange?: (next_target_keys: IdType[]) => void
+  onChange?: (nextTargetKeys: IdType[]) => void
 }
 
 const Transfer = (props: Props) => {
   const { dataSource, targetKeys, render, onChange } = props
   const { lang } = useI18n()
-  const [right_keys, setRightKeys] = useState<IdType[]>(targetKeys)
-  const [left_selected_keys, setLeftSelectedKeys] = useState<IdType[]>([])
-  const [right_selected_keys, setRightSelectedKeys] = useState<IdType[]>([])
+  const [rightKeys, setRightKeys] = useState<IdType[]>(targetKeys)
+  const [leftSelectedKeys, setLeftSelectedKeys] = useState<IdType[]>([])
+  const [rightSelectedKeys, setRightSelectedKeys] = useState<IdType[]>([])
 
-  const List = (list_props: IListProps) => {
-    const { data, selected_keys, setSelectedKeys } = list_props
+  const List = (listProps: IListProps) => {
+    const { data, selectedKeys, setSelectedKeys } = listProps
 
     const toggleSelect = (id: IdType) => {
       setSelectedKeys(
-        selected_keys.includes(id) ? selected_keys.filter((i) => i != id) : [...selected_keys, id],
+        selectedKeys.includes(id) ? selectedKeys.filter((i) => i != id) : [...selectedKeys, id],
       )
     }
 
@@ -51,12 +51,12 @@ const Transfer = (props: Props) => {
       <div className={styles.list}>
         {data.map((item) => {
           if (!item || !item.id) return null
-          const is_selected = selected_keys.includes(item.id)
+          const isSelected = selectedKeys.includes(item.id)
 
           return (
             <Box
               key={item.id}
-              className={clsx(styles.item, is_selected && styles.selected)}
+              className={clsx(styles.item, isSelected && styles.selected)}
               px="12px"
               py="4px"
               onClick={() => toggleSelect(item.id)}
@@ -70,14 +70,14 @@ const Transfer = (props: Props) => {
   }
 
   const moveLeftToRight = () => {
-    const result = [...right_keys, ...left_selected_keys]
+    const result = [...rightKeys, ...leftSelectedKeys]
     setRightKeys(result)
     setLeftSelectedKeys([])
     onChange && onChange(result)
   }
 
   const moveRightToLeft = () => {
-    const result = right_keys.filter((i) => !right_selected_keys.includes(i))
+    const result = rightKeys.filter((i) => !rightSelectedKeys.includes(i))
     setRightKeys(result)
     setRightSelectedKeys([])
     onChange && onChange(result)
@@ -102,15 +102,15 @@ const Transfer = (props: Props) => {
             {lang.all}{' '}
             <span>
               (
-              {left_selected_keys.length === 0
+              {leftSelectedKeys.length === 0
                 ? dataSource.length
-                : `${left_selected_keys.length}/${dataSource.length}`}
+                : `${leftSelectedKeys.length}/${dataSource.length}`}
               )
             </span>
           </Box>
           <List
-            data={dataSource.filter((i) => !right_keys.includes(i.id))}
-            selected_keys={left_selected_keys}
+            data={dataSource.filter((i) => !rightKeys.includes(i.id))}
+            selectedKeys={leftSelectedKeys}
             setSelectedKeys={setLeftSelectedKeys}
           />
         </Box>
@@ -120,7 +120,7 @@ const Transfer = (props: Props) => {
               size="sm"
               variant="outline"
               aria-label="Move to right"
-              disabled={left_selected_keys.length === 0}
+              disabled={leftSelectedKeys.length === 0}
               onClick={moveLeftToRight}
             >
               <IoArrowForward />
@@ -129,7 +129,7 @@ const Transfer = (props: Props) => {
               size="sm"
               variant="outline"
               aria-label="Move to left"
-              disabled={right_selected_keys.length === 0}
+              disabled={rightSelectedKeys.length === 0}
               onClick={moveRightToLeft}
             >
               <IoArrowBack />
@@ -146,17 +146,17 @@ const Transfer = (props: Props) => {
             {lang.selected}{' '}
             <span>
               (
-              {right_selected_keys.length === 0
-                ? right_keys.length
-                : `${right_selected_keys.length}/${right_keys.length}`}
+              {rightSelectedKeys.length === 0
+                ? rightKeys.length
+                : `${rightSelectedKeys.length}/${rightKeys.length}`}
               )
             </span>
           </Box>
           <List
             data={
-              right_keys.map((id) => dataSource.find((i) => i.id === id)) as ITransferSourceObject[]
+              rightKeys.map((id) => dataSource.find((i) => i.id === id)) as ITransferSourceObject[]
             }
-            selected_keys={right_selected_keys}
+            selectedKeys={rightSelectedKeys}
             setSelectedKeys={setRightSelectedKeys}
           />
         </Box>

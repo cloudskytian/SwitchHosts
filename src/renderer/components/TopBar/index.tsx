@@ -27,23 +27,23 @@ import { useEffect, useState } from 'react'
 import styles from './index.module.scss'
 
 interface IProps {
-  show_left_panel: boolean
-  show_right_panel: boolean
-  use_system_window_frame: boolean
+  showLeftPanel: boolean
+  showRightPanel: boolean
+  useSystemWindowFrame: boolean
 }
 
 export default (props: IProps) => {
-  const { show_left_panel, show_right_panel, use_system_window_frame } = props
+  const { showLeftPanel, showRightPanel, useSystemWindowFrame } = props
   const { lang } = useI18n()
   const { isHostsInTrashcan, current_hosts, isReadOnly } = useHostsData()
-  const [is_on, setIsOn] = useState(!!current_hosts?.on)
+  const [isOn, setIsOn] = useState(!!current_hosts?.on)
   const iconSize = 20
   const iconStroke = 1.5
 
-  const show_toggle_switch =
-    !show_left_panel && current_hosts && !isHostsInTrashcan(current_hosts.id)
-  const show_history = !current_hosts
-  const show_window_controls = agent.platform !== 'darwin'
+  const showToggleSwitch =
+    !showLeftPanel && current_hosts && !isHostsInTrashcan(current_hosts.id)
+  const showHistory = !current_hosts
+  const showWindowControls = agent.platform !== 'darwin'
 
   useEffect(() => {
     setIsOn(!!current_hosts?.on)
@@ -65,12 +65,12 @@ export default (props: IProps) => {
         <ActionIcon
           aria-label="Toggle sidebar"
           onClick={() => {
-            agent.broadcast(events.toggle_left_panel, !show_left_panel)
+            agent.broadcast(events.toggle_left_panel, !showLeftPanel)
           }}
           variant="subtle"
           color="gray"
         >
-          {show_left_panel ? (
+          {showLeftPanel ? (
             <IconLayoutSidebarLeftCollapse size={iconSize} stroke={iconStroke} />
           ) : (
             <IconLayoutSidebarLeftExpand size={iconSize} stroke={iconStroke} />
@@ -91,7 +91,7 @@ export default (props: IProps) => {
           {current_hosts ? (
             <>
               <span className={styles.hosts_icon}>
-                <ItemIcon type={current_hosts.type} is_collapsed={!current_hosts.folder_open} />
+                <ItemIcon type={current_hosts.type} isCollapsed={!current_hosts.folder_open} />
               </span>
               <span className={styles.hosts_title}>{current_hosts.title || lang.untitled}</span>
             </>
@@ -111,17 +111,17 @@ export default (props: IProps) => {
       </Box>
 
       <Flex align="center" justify="flex-end" gap={8}>
-        {show_toggle_switch ? (
+        {showToggleSwitch ? (
           <Box mr="12px">
             <SwitchButton
-              on={is_on}
+              on={isOn}
               onChange={(on) => {
                 current_hosts && agent.broadcast(events.toggle_item, current_hosts.id, on)
               }}
             />
           </Box>
         ) : null}
-        {show_history ? (
+        {showHistory ? (
           <ActionIcon
             aria-label="Show history"
             variant="subtle"
@@ -135,19 +135,19 @@ export default (props: IProps) => {
         <ActionIcon
           aria-label="Toggle right panel"
           onClick={() => {
-            agent.broadcast(events.toggle_right_panel, !show_right_panel)
+            agent.broadcast(events.toggle_right_panel, !showRightPanel)
           }}
           variant="subtle"
           color="gray"
         >
-          {show_right_panel ? (
+          {showRightPanel ? (
             <IconLayoutSidebarRightCollapse size={iconSize} stroke={iconStroke} />
           ) : (
             <IconLayoutSidebarRightExpand size={iconSize} stroke={iconStroke} />
           )}
         </ActionIcon>
 
-        {show_window_controls ? (
+        {showWindowControls ? (
           <>
             <ActionIcon
               aria-label="Minimize"

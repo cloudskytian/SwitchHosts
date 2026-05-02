@@ -20,7 +20,7 @@ import General from './General'
 import styles from './styles.module.scss'
 
 const PreferencePanel = () => {
-  const [is_open, setIsOpen] = useState(false)
+  const [isOpen, setIsOpen] = useState(false)
   const { configs, updateConfigs } = useConfigs()
   const [data, setData] = useState<ConfigsType | null>(configs)
   const { lang } = useI18n()
@@ -57,7 +57,7 @@ const PreferencePanel = () => {
 
   return (
     <SideDrawer
-      opened={is_open}
+      opened={isOpen}
       onClose={onClose}
       size="lg"
       title={

@@ -17,10 +17,10 @@ interface IProps {
 const Commands = (props: IProps) => {
   const { data, onChange } = props
   const { lang } = useI18n()
-  const [show_history, setShowHistory] = useState(false)
+  const [showHistory, setShowHistory] = useState(false)
 
   const toggleShowHistory = () => {
-    setShowHistory(!show_history)
+    setShowHistory(!showHistory)
   }
 
   return (
@@ -38,12 +38,12 @@ const Commands = (props: IProps) => {
 
       <Box>
         <Button variant="light" onClick={toggleShowHistory}>
-          {show_history ? lang.hide_history : lang.show_history}
+          {showHistory ? lang.hide_history : lang.show_history}
         </Button>
       </Box>
 
       <Box w="100%">
-        <CommandsHistory is_show={show_history} />
+        <CommandsHistory isShow={showHistory} />
       </Box>
     </Stack>
   )

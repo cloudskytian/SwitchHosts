@@ -15,16 +15,16 @@ interface Props {
 
 const SwitchButton = (props: Props) => {
   const { on, onChange, disabled } = props
-  const [is_on, setIsOn] = useState(on)
-  const [is_disabled, setIsDisabled] = useState(disabled)
+  const [isOn, setIsOn] = useState(on)
+  const [isDisabled, setIsDisabled] = useState(disabled)
 
   const onClick = () => {
     if (disabled) return
 
-    const new_status = !is_on
-    setIsOn(new_status)
+    const newStatus = !isOn
+    setIsOn(newStatus)
     if (typeof onChange === 'function') {
-      onChange(new_status)
+      onChange(newStatus)
     }
   }
 
@@ -35,7 +35,7 @@ const SwitchButton = (props: Props) => {
 
   return (
     <div
-      className={clsx(styles.root, is_on && styles.on, is_disabled && styles.disabled)}
+      className={clsx(styles.root, isOn && styles.on, isDisabled && styles.disabled)}
       onClick={onClick}
     >
       <div className={styles.handler} />

@@ -24,9 +24,9 @@ import styles from './Trashcan.module.scss'
 const Trashcan = () => {
   const { lang } = useI18n()
   const { hosts_data, current_hosts, setCurrentHosts, loadHostsData } = useHostsData()
-  const [is_clear_confirm_open, setIsClearConfirmOpen] = useState(false)
+  const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false)
 
-  const trash_list = useMemo<ITrashcanListObject[]>(
+  const trashList = useMemo<ITrashcanListObject[]>(
     () =>
       hosts_data.trashcan.map((i) => ({
         ...i,
@@ -59,7 +59,7 @@ const Trashcan = () => {
       })
   }
 
-  const is_empty = hosts_data.trashcan.length === 0
+  const isEmpty = hosts_data.trashcan.length === 0
 
   return (
     <div className={styles.root}>
@@ -71,7 +71,7 @@ const Trashcan = () => {
             color="red"
             size={24}
             onClick={() => setIsClearConfirmOpen(true)}
-            disabled={is_empty}
+            disabled={isEmpty}
             aria-label={lang.trashcan_clear}
           >
             <IconTrashX size={16} stroke={1.5} />
@@ -80,23 +80,23 @@ const Trashcan = () => {
       </div>
 
       <div className={styles.body}>
-        {is_empty ? (
+        {isEmpty ? (
           <div className={styles.empty}>{lang.trashcan_empty}</div>
         ) : (
           <Tree
-            data={trash_list}
+            data={trashList}
             nodeRender={(item) => <TrashcanItem data={item as ITrashcanListObject} />}
             nodeClassName={list_styles.node}
             nodeSelectedClassName={list_styles.node_selected}
             nodeCollapseArrowClassName={list_styles.arrow}
             onSelect={onSelect}
-            selected_ids={current_hosts ? [current_hosts.id] : []}
+            selectedIds={current_hosts ? [current_hosts.id] : []}
           />
         )}
       </div>
 
       <ConfirmModal
-        opened={is_clear_confirm_open}
+        opened={isClearConfirmOpen}
         onClose={() => setIsClearConfirmOpen(false)}
         onConfirm={doClearTrashcan}
         title={lang.trashcan_clear}

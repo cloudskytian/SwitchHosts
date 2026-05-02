@@ -26,41 +26,41 @@ import styles from './HostsEditor.module.scss'
 
 const HostsEditor = () => {
   const { current_hosts, isReadOnly } = useHostsData()
-  const hosts_id = current_hosts?.id || '0'
-  const is_read_only = isReadOnly(current_hosts)
+  const hostsId = current_hosts?.id || '0'
+  const readOnly = isReadOnly(current_hosts)
   const [content, setContent] = useState('')
 
-  const ref_mount = useRef<HTMLDivElement>(null)
-  const ref_view = useRef<EditorView | null>(null)
-  const ref_built = useRef<BuiltExtensions | null>(null)
+  const refMount = useRef<HTMLDivElement>(null)
+  const refView = useRef<EditorView | null>(null)
+  const refBuilt = useRef<BuiltExtensions | null>(null)
   // Refs mirror React state so that callbacks captured by EditorView extensions
   // (which are created once on mount) can always read the latest values.
-  const ref_hosts_id = useRef(hosts_id)
-  const ref_is_read_only = useRef(is_read_only)
+  const refHostsId = useRef(hostsId)
+  const refReadOnly = useRef(readOnly)
   // Pending find: when a show_source event arrives before the target hosts is loaded
-  // (List broadcasts select_hosts then show_source synchronously, but hosts_id only
+  // (List broadcasts select_hosts then show_source synchronously, but hostsId only
   // updates on the next render), we stash the params here and apply them once
   // loadContent finishes (with a 3s timeout to avoid stale state).
-  const ref_pending_find = useRef<IFindShowSourceParam | null>(null)
-  const ref_pending_find_timer = useRef<number | null>(null)
+  const refPendingFind = useRef<IFindShowSourceParam | null>(null)
+  const refPendingFindTimer = useRef<number | null>(null)
 
   const clearPendingFind = () => {
-    if (ref_pending_find_timer.current) {
-      window.clearTimeout(ref_pending_find_timer.current)
-      ref_pending_find_timer.current = null
+    if (refPendingFindTimer.current) {
+      window.clearTimeout(refPendingFindTimer.current)
+      refPendingFindTimer.current = null
     }
-    ref_pending_find.current = null
+    refPendingFind.current = null
   }
 
   useEffect(() => clearPendingFind, [])
 
   useEffect(() => {
-    ref_hosts_id.current = hosts_id
-  }, [hosts_id])
+    refHostsId.current = hostsId
+  }, [hostsId])
 
   useEffect(() => {
-    ref_is_read_only.current = is_read_only
-  }, [is_read_only])
+    refReadOnly.current = readOnly
+  }, [readOnly])
 
   const { run: toSave } = useDebounceFn(
     (id: string, nextContent: string) => {
@@ -75,12 +75,12 @@ const HostsEditor = () => {
   const onDocChange = (nextContent: string) => {
     const normalizedContent = normalizeLineEndings(nextContent)
     setContent(normalizedContent)
-    toSave(ref_hosts_id.current, normalizedContent)
+    toSave(refHostsId.current, normalizedContent)
   }
 
   const onGutterClick = (lineIndex: number) => {
-    if (ref_is_read_only.current) return
-    const view = ref_view.current
+    if (refReadOnly.current) return
+    const view = refView.current
     if (!view) return
     if (view.composing) return
 
@@ -97,8 +97,8 @@ const HostsEditor = () => {
   }
 
   const toggleComment = () => {
-    if (ref_is_read_only.current) return
-    const view = ref_view.current
+    if (refReadOnly.current) return
+    const view = refView.current
     if (!view) return
     // Skip while an IME composition is active to avoid dropping characters.
     if (view.composing) return
@@ -118,7 +118,7 @@ const HostsEditor = () => {
 
   /** Restore a character-offset selection in the editor (used by find/show-source). */
   const setSelection = (params: IFindShowSourceParam) => {
-    const view = ref_view.current
+    const view = refView.current
     if (!view) return
 
     const docLen = view.state.doc.length
@@ -140,14 +140,14 @@ const HostsEditor = () => {
    */
   const rebuildExtensions = () =>
     buildExtensions({
-      initialReadOnly: ref_is_read_only.current,
+      initialReadOnly: refReadOnly.current,
       onDocChange,
       onGutterClick,
     })
 
   /** Fetch hosts content and replace the editor state (clears undo history). */
-  const loadContent = async (targetHostsId = hosts_id) => {
-    const view = ref_view.current
+  const loadContent = async (targetHostsId = hostsId) => {
+    const view = refView.current
     if (!view) return
 
     const nextContent = normalizeLineEndings(
@@ -156,14 +156,14 @@ const HostsEditor = () => {
         : await actions.getHostsContent(targetHostsId),
     )
 
-    if (ref_hosts_id.current !== targetHostsId) return
+    if (refHostsId.current !== targetHostsId) return
 
     setContent(nextContent)
     const built = rebuildExtensions()
-    ref_built.current = built
+    refBuilt.current = built
     view.setState(EditorState.create({ doc: nextContent, extensions: built.extensions }))
 
-    const pendingFind = ref_pending_find.current
+    const pendingFind = refPendingFind.current
     if (pendingFind && pendingFind.item_id === targetHostsId) {
       setSelection(pendingFind)
       clearPendingFind()
@@ -172,7 +172,7 @@ const HostsEditor = () => {
 
   // Mount EditorView once; survive across hosts switches via setState.
   useEffect(() => {
-    const mount = ref_mount.current
+    const mount = refMount.current
     if (!mount) return
 
     const built = rebuildExtensions()
@@ -181,103 +181,103 @@ const HostsEditor = () => {
       parent: mount,
     })
 
-    ref_built.current = built
-    ref_view.current = view
+    refBuilt.current = built
+    refView.current = view
 
     return () => {
       view.destroy()
-      ref_view.current = null
-      ref_built.current = null
+      refView.current = null
+      refBuilt.current = null
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Load content when the active hosts changes.
   useEffect(() => {
-    loadContent(hosts_id).catch((e) => console.error(e))
+    loadContent(hostsId).catch((e) => console.error(e))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hosts_id])
+  }, [hostsId])
 
   // Reconfigure read-only state via the compartment without rebuilding the editor.
   useEffect(() => {
-    const view = ref_view.current
-    const built = ref_built.current
+    const view = refView.current
+    const built = refBuilt.current
     if (!view || !built) return
 
     view.dispatch({
-      effects: built.readOnlyCompartment.reconfigure(readOnlyExtensions(is_read_only)),
+      effects: built.readOnlyCompartment.reconfigure(readOnlyExtensions(readOnly)),
     })
-  }, [is_read_only])
+  }, [readOnly])
 
   useOnBroadcast(
     events.hosts_refreshed,
     (h: IHostsListObject) => {
-      if (hosts_id !== '0' && h.id !== hosts_id) return
+      if (hostsId !== '0' && h.id !== hostsId) return
       loadContent().catch((e) => console.error(e))
     },
-    [hosts_id],
+    [hostsId],
   )
 
   useOnBroadcast(
     events.hosts_refreshed_by_id,
     (id: string) => {
-      if (hosts_id !== '0' && hosts_id !== id) return
+      if (hostsId !== '0' && hostsId !== id) return
       loadContent().catch((e) => console.error(e))
     },
-    [hosts_id],
+    [hostsId],
   )
 
   useOnBroadcast(
     events.set_hosts_on_status,
     () => {
-      if (hosts_id === '0') {
+      if (hostsId === '0') {
         loadContent().catch((e) => console.error(e))
       }
     },
-    [hosts_id],
+    [hostsId],
   )
 
   useOnBroadcast(
     events.system_hosts_updated,
     () => {
-      if (hosts_id === '0') {
+      if (hostsId === '0') {
         loadContent().catch((e) => console.error(e))
       }
     },
-    [hosts_id],
+    [hostsId],
   )
 
-  useOnBroadcast(events.toggle_comment, toggleComment, [hosts_id])
+  useOnBroadcast(events.toggle_comment, toggleComment, [hostsId])
 
   useOnBroadcast(
     events.show_source,
     (params: IFindShowSourceParam) => {
       // Cross-host jump: List broadcasts select_hosts to switch the active hosts,
-      // but hosts_id only updates on the next render. Stash params and let
+      // but hostsId only updates on the next render. Stash params and let
       // loadContent apply them after setState.
-      if (params.item_id !== hosts_id || !ref_view.current) {
+      if (params.item_id !== hostsId || !refView.current) {
         clearPendingFind()
-        ref_pending_find.current = params
-        ref_pending_find_timer.current = window.setTimeout(clearPendingFind, 3000)
+        refPendingFind.current = params
+        refPendingFindTimer.current = window.setTimeout(clearPendingFind, 3000)
         return
       }
 
       clearPendingFind()
       setSelection(params)
     },
-    [hosts_id],
+    [hostsId],
   )
 
   return (
     <div className={styles.root}>
-      <div className={clsx(styles.editor, is_read_only && styles.read_only)}>
-        <div ref={ref_mount} className={styles.mount} />
+      <div className={clsx(styles.editor, readOnly && styles.read_only)}>
+        <div ref={refMount} className={styles.mount} />
       </div>
 
       <StatusBar
-        line_count={content.split('\n').length}
+        lineCount={content.split('\n').length}
         bytes={content.length}
-        read_only={is_read_only}
+        readOnly={readOnly}
       />
     </div>
   )

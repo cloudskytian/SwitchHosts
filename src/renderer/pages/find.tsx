@@ -59,16 +59,16 @@ const FindPage = () => {
   const { lang, i18n, setLocale } = useI18n()
   const { configs, loadConfigs } = useConfigs()
   const [keyword, setKeyword] = useState('')
-  const [replace_to, setReplaceTo] = useState('')
-  const [is_regexp, setIsRegExp] = useState(false)
-  const [is_ignore_case, setIsIgnoreCase] = useState(false)
-  const [find_result, setFindResult] = useState<IFindItem[]>([])
-  const [find_positions, setFindPositions] = useState<IFindPositionShow[]>([])
-  const [is_searching, setIsSearching] = useState(false)
-  const [current_result_idx, setCurrentResultIdx] = useState(0)
-  const [last_scroll_result_idx, setlastScrollResultIdx] = useState(-1)
-  const debounced_keyword = useDebounce(keyword, { wait: 500 })
-  const ipt_kw = useRef<HTMLInputElement>(null)
+  const [replaceTo, setReplaceTo] = useState('')
+  const [isRegExp, setIsRegExp] = useState(false)
+  const [isIgnoreCase, setIsIgnoreCase] = useState(false)
+  const [findResult, setFindResult] = useState<IFindItem[]>([])
+  const [findPositions, setFindPositions] = useState<IFindPositionShow[]>([])
+  const [isSearching, setIsSearching] = useState(false)
+  const [currentResultIdx, setCurrentResultIdx] = useState(0)
+  const [lastScrollResultIdx, setlastScrollResultIdx] = useState(-1)
+  const debouncedKeyword = useDebounce(keyword, { wait: 500 })
+  const iptKw = useRef<HTMLInputElement>(null)
 
   const init = async () => {
     if (!configs) return
@@ -91,13 +91,13 @@ const FindPage = () => {
   }, [lang])
 
   useEffect(() => {
-    doFind(debounced_keyword)
-  }, [debounced_keyword, is_regexp, is_ignore_case])
+    doFind(debouncedKeyword)
+  }, [debouncedKeyword, isRegExp, isIgnoreCase])
 
   useEffect(() => {
     const onFocus = () => {
-      if (ipt_kw.current) {
-        ipt_kw.current.focus()
+      if (iptKw.current) {
+        iptKw.current.focus()
       }
     }
 
@@ -118,24 +118,24 @@ const FindPage = () => {
     setlastScrollResultIdx(-1)
   })
 
-  const parsePositionShow = (find_items: IFindItem[]) => {
-    const positions_show: IFindPositionShow[] = []
+  const parsePositionShow = (findItems: IFindItem[]) => {
+    const positionsShow: IFindPositionShow[] = []
 
-    find_items.map((item) => {
-      const { item_id, item_title, item_type, positions } = item
+    findItems.map((item) => {
+      const { item_id: itemId, item_title: itemTitle, item_type: itemType, positions } = item
       positions.map((p, index) => {
-        positions_show.push({
-          item_id,
-          item_title,
-          item_type,
+        positionsShow.push({
+          item_id: itemId,
+          item_title: itemTitle,
+          item_type: itemType,
           ...p,
           index,
-          is_readonly: item_type !== 'local',
+          is_readonly: itemType !== 'local',
         })
       })
     })
 
-    setFindPositions(positions_show)
+    setFindPositions(positionsShow)
   }
 
   const { run: doFind } = useDebounceFn(
@@ -148,8 +148,8 @@ const FindPage = () => {
 
       setIsSearching(true)
       const result = await actions.findBy(v, {
-        is_regexp,
-        is_ignore_case,
+        is_regexp: isRegExp,
+        is_ignore_case: isIgnoreCase,
       })
       setCurrentResultIdx(0)
       setlastScrollResultIdx(0)
@@ -159,18 +159,18 @@ const FindPage = () => {
 
       await actions.findAddHistory({
         value: v,
-        is_regexp,
-        is_ignore_case,
+        is_regexp: isRegExp,
+        is_ignore_case: isIgnoreCase,
       })
     },
     { wait: 500 },
   )
 
-  const toShowSource = async (result_item: IFindPositionShow) => {
+  const toShowSource = async (resultItem: IFindPositionShow) => {
     await actions.cmdFocusMainWindow()
     agent.broadcast(
       events.show_source,
-      lodash.pick<IFindShowSourceParam>(result_item, [
+      lodash.pick<IFindShowSourceParam>(resultItem, [
         'item_id',
         'start',
         'end',
@@ -184,28 +184,28 @@ const FindPage = () => {
   }
 
   const replaceOne = async () => {
-    const pos: IFindPositionShow = find_positions[current_result_idx]
+    const pos: IFindPositionShow = findPositions[currentResultIdx]
     if (!pos) return
 
     setFindPositions([
-      ...find_positions.slice(0, current_result_idx),
+      ...findPositions.slice(0, currentResultIdx),
       {
         ...pos,
         is_disabled: true,
       },
-      ...find_positions.slice(current_result_idx + 1),
+      ...findPositions.slice(currentResultIdx + 1),
     ])
 
-    if (replace_to) {
-      actions.findAddReplaceHistory(replace_to).catch((e) => console.error(e))
+    if (replaceTo) {
+      actions.findAddReplaceHistory(replaceTo).catch((e) => console.error(e))
     }
 
-    const r = find_result.find((i) => i.item_id === pos.item_id)
+    const r = findResult.find((i) => i.item_id === pos.item_id)
     if (!r) return
     const splitters = r.splitters
     const sp = splitters[pos.index]
     if (!sp) return
-    sp.replace = replace_to
+    sp.replace = replaceTo
 
     const content = splitters
       .map((splitter) => `${splitter.before}${splitter.replace ?? splitter.match}${splitter.after}`)
@@ -213,53 +213,53 @@ const FindPage = () => {
     await actions.setHostsContent(pos.item_id, content)
     agent.broadcast(events.hosts_refreshed_by_id, pos.item_id)
 
-    if (current_result_idx < find_positions.length - 1) {
-      setCurrentResultIdx(current_result_idx + 1)
+    if (currentResultIdx < findPositions.length - 1) {
+      setCurrentResultIdx(currentResultIdx + 1)
     }
   }
 
   const replaceAll = async () => {
-    for (const item of find_result) {
-      const { item_id, item_type, splitters } = item
-      if (item_type !== 'local' || splitters.length === 0) continue
+    for (const item of findResult) {
+      const { item_id: itemId, item_type: itemType, splitters } = item
+      if (itemType !== 'local' || splitters.length === 0) continue
       const content = splitters
-        .map((splitter) => `${splitter.before}${replace_to}${splitter.after}`)
+        .map((splitter) => `${splitter.before}${replaceTo}${splitter.after}`)
         .join('')
-      await actions.setHostsContent(item_id, content)
-      agent.broadcast(events.hosts_refreshed_by_id, item_id)
+      await actions.setHostsContent(itemId, content)
+      agent.broadcast(events.hosts_refreshed_by_id, itemId)
     }
 
     setFindPositions(
-      find_positions.map((pos) => ({
+      findPositions.map((pos) => ({
         ...pos,
         is_disabled: !pos.is_readonly,
       })),
     )
 
-    if (replace_to) {
-      actions.findAddReplaceHistory(replace_to).catch((e) => console.error(e))
+    if (replaceTo) {
+      actions.findAddReplaceHistory(replaceTo).catch((e) => console.error(e))
     }
   }
 
   const ResultRow = ({ data, index }: { data: IFindPositionShow; index: number }) => {
     const el = useRef<HTMLDivElement>(null)
-    const is_selected = current_result_idx === index
+    const isSelected = currentResultIdx === index
 
     useEffect(() => {
-      if (el.current && is_selected && current_result_idx !== last_scroll_result_idx) {
-        setlastScrollResultIdx(current_result_idx)
+      if (el.current && isSelected && currentResultIdx !== lastScrollResultIdx) {
+        setlastScrollResultIdx(currentResultIdx)
         scrollIntoView(el.current, {
           behavior: 'smooth',
           scrollMode: 'if-needed',
         })
       }
-    }, [current_result_idx, is_selected, last_scroll_result_idx])
+    }, [currentResultIdx, isSelected, lastScrollResultIdx])
 
     return (
       <Box
         className={clsx(
           styles.result_row,
-          is_selected && styles.selected,
+          isSelected && styles.selected,
           data.is_disabled && styles.disabled,
           data.is_readonly && styles.readonly,
         )}
@@ -319,11 +319,11 @@ const FindPage = () => {
     menu.show()
   }
 
-  let can_replace = true
-  if (current_result_idx > -1) {
-    const pos = find_positions[current_result_idx]
+  let canReplace = true
+  if (currentResultIdx > -1) {
+    const pos = findPositions[currentResultIdx]
     if (pos?.is_disabled || pos?.is_readonly) {
-      can_replace = false
+      canReplace = false
     }
   }
 
@@ -344,7 +344,7 @@ const FindPage = () => {
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
             setKeyword(e.target.value)
           }}
-          ref={ipt_kw}
+          ref={iptKw}
           leftSection={leftSection(showKeywordHistory)}
           leftSectionPointerEvents="all"
           styles={flushedInputStyles}
@@ -352,7 +352,7 @@ const FindPage = () => {
 
         <TextInput
           placeholder="replace to"
-          value={replace_to}
+          value={replaceTo}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
             setReplaceTo(e.target.value)
           }}
@@ -363,12 +363,12 @@ const FindPage = () => {
 
         <Group w="100%" py="8px" px="16px" gap="16px">
           <Checkbox
-            checked={is_regexp}
+            checked={isRegExp}
             onChange={(e) => setIsRegExp(e.target.checked)}
             label={lang.regexp}
           />
           <Checkbox
-            checked={is_ignore_case}
+            checked={isIgnoreCase}
             onChange={(e) => setIsIgnoreCase(e.target.checked)}
             label={lang.ignore_case}
           />
@@ -390,18 +390,18 @@ const FindPage = () => {
             backgroundColor: 'var(--swh-editor-read-only-bg)',
           }}
         >
-          {find_positions.map((item, idx) => (
+          {findPositions.map((item, idx) => (
             <ResultRow key={`${item.item_id}-${idx}`} data={item} index={idx} />
           ))}
         </Box>
 
         <Group w="100%" py="8px" px="16px" gap="16px">
-          {is_searching ? (
+          {isSearching ? (
             <Loader size="sm" />
           ) : (
             <span>
-              {i18n.trans(find_positions.length > 1 ? 'items_found' : 'item_found', [
-                find_positions.length.toLocaleString(),
+              {i18n.trans(findPositions.length > 1 ? 'items_found' : 'item_found', [
+                findPositions.length.toLocaleString(),
               ])}
             </span>
           )}
@@ -409,7 +409,7 @@ const FindPage = () => {
           <Button
             size="sm"
             variant="outline"
-            disabled={is_searching || find_positions.length === 0}
+            disabled={isSearching || findPositions.length === 0}
             onClick={replaceAll}
           >
             {lang.replace_all}
@@ -417,7 +417,7 @@ const FindPage = () => {
           <Button
             size="sm"
             variant="filled"
-            disabled={is_searching || find_positions.length === 0 || !can_replace}
+            disabled={isSearching || findPositions.length === 0 || !canReplace}
             onClick={replaceOne}
           >
             {lang.replace}
@@ -429,11 +429,11 @@ const FindPage = () => {
               variant="outline"
               size="lg"
               onClick={() => {
-                let idx = current_result_idx - 1
+                let idx = currentResultIdx - 1
                 if (idx < 0) idx = 0
                 setCurrentResultIdx(idx)
               }}
-              disabled={current_result_idx <= 0}
+              disabled={currentResultIdx <= 0}
             >
               <IoArrowBackOutline />
             </ActionIcon>
@@ -442,11 +442,11 @@ const FindPage = () => {
               variant="outline"
               size="lg"
               onClick={() => {
-                let idx = current_result_idx + 1
-                if (idx > find_positions.length - 1) idx = find_positions.length - 1
+                let idx = currentResultIdx + 1
+                if (idx > findPositions.length - 1) idx = findPositions.length - 1
                 setCurrentResultIdx(idx)
               }}
-              disabled={current_result_idx >= find_positions.length - 1}
+              disabled={currentResultIdx >= findPositions.length - 1}
             >
               <IoArrowForwardOutline />
             </ActionIcon>

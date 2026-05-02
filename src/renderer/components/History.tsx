@@ -31,12 +31,12 @@ import styles from './History.module.scss'
 
 interface IHistoryProps {
   list: IHostsHistoryObject[]
-  selected_item: IHostsHistoryObject | undefined
+  selectedItem: IHostsHistoryObject | undefined
   setSelectedItem: (item: IHostsHistoryObject) => void
 }
 
 const HistoryList = (props: IHistoryProps): React.ReactElement => {
-  const { list, selected_item, setSelectedItem } = props
+  const { list, selectedItem, setSelectedItem } = props
   const { lang } = useI18n()
 
   if (list.length === 0) {
@@ -58,7 +58,7 @@ const HistoryList = (props: IHistoryProps): React.ReactElement => {
           overflow: 'hidden',
         }}
       >
-        <HostsViewer content={selected_item ? selected_item.content : ''} />
+        <HostsViewer content={selectedItem ? selectedItem.content : ''} />
       </Box>
       <Box
         w={200}
@@ -76,7 +76,7 @@ const HistoryList = (props: IHistoryProps): React.ReactElement => {
             px="12px"
             py="8px"
             style={{ userSelect: 'none' }}
-            className={clsx(item.id === selected_item?.id && styles.selected)}
+            className={clsx(item.id === selectedItem?.id && styles.selected)}
           >
             <Group gap="8px" wrap="nowrap" align="flex-start">
               <Box>
@@ -115,24 +115,24 @@ const Loading = () => (
 
 const History = () => {
   const { configs, updateConfigs } = useConfigs()
-  const [is_open, setIsOpen] = useState(false)
-  const [is_loading, setIsLoading] = useState(false)
+  const [isOpen, setIsOpen] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
   const [list, setList] = useState<IHostsHistoryObject[]>([])
-  const [selected_item, setSelectedItem] = useState<IHostsHistoryObject>()
+  const [selectedItem, setSelectedItem] = useState<IHostsHistoryObject>()
 
   const { lang } = useI18n()
 
   const loadData = async () => {
     setIsLoading(true)
-    let next_list = await actions.getHistoryList()
-    next_list = next_list.reverse()
-    setList(next_list)
-    if (!selected_item) {
-      setSelectedItem(next_list[0])
+    let nextList = await actions.getHistoryList()
+    nextList = nextList.reverse()
+    setList(nextList)
+    if (!selectedItem) {
+      setSelectedItem(nextList[0])
     }
     setIsLoading(false)
 
-    return next_list
+    return nextList
   }
 
   const onClose = () => {
@@ -150,9 +150,9 @@ const History = () => {
     setSelectedItem(undefined)
     const list2 = await loadData()
 
-    const next_item = list2[idx] || list2[idx - 1]
-    if (next_item) {
-      setSelectedItem(next_item)
+    const nextItem = list2[idx] || list2[idx - 1]
+    if (nextItem) {
+      setSelectedItem(nextItem)
     }
   }
 
@@ -168,15 +168,15 @@ const History = () => {
     })
   })
 
-  const history_limit_values: number[] = [10, 50, 100, 500]
-  if (configs && !history_limit_values.includes(configs.history_limit)) {
-    history_limit_values.push(configs.history_limit)
-    history_limit_values.sort()
+  const historyLimitValues: number[] = [10, 50, 100, 500]
+  if (configs && !historyLimitValues.includes(configs.history_limit)) {
+    historyLimitValues.push(configs.history_limit)
+    historyLimitValues.sort()
   }
 
   return (
     <SideDrawer
-      opened={is_open}
+      opened={isOpen}
       onClose={onClose}
       size="lg"
       title={
@@ -189,7 +189,7 @@ const History = () => {
         <Flex align="center" gap="12px">
           <Box>{lang.system_hosts_history_limit}</Box>
           <NativeSelect
-            data={history_limit_values.map((v) => v.toString())}
+            data={historyLimitValues.map((v) => v.toString())}
             value={String(configs?.history_limit ?? '')}
             onChange={(e) => updateHistoryLimit(parseInt(e.target.value || '0'))}
             w={100}
@@ -202,8 +202,8 @@ const History = () => {
           <Box style={{ flex: 1 }} />
           <Button
             variant="outline"
-            disabled={!selected_item}
-            onClick={() => selected_item && deleteItem(selected_item.id)}
+            disabled={!selectedItem}
+            onClick={() => selectedItem && deleteItem(selectedItem.id)}
             leftSection={<IconX size={16} />}
           >
             {lang.delete}
@@ -215,12 +215,12 @@ const History = () => {
       }
     >
       <Box style={{ height: '100%' }}>
-        {is_loading ? (
+        {isLoading ? (
           <Loading />
         ) : (
           <HistoryList
             list={list}
-            selected_item={selected_item}
+            selectedItem={selectedItem}
             setSelectedItem={setSelectedItem}
           />
         )}

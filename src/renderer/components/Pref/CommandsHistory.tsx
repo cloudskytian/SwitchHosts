@@ -12,11 +12,11 @@ import { useEffect, useState } from 'react'
 import { BiTrash } from 'react-icons/bi'
 
 interface Props {
-  is_show: boolean
+  isShow: boolean
 }
 
 const CommandsHistory = (props: Props) => {
-  const { is_show } = props
+  const { isShow } = props
   const [list, setList] = useState<ICommandRunResult[]>([])
   const { lang } = useI18n()
 
@@ -37,12 +37,12 @@ const CommandsHistory = (props: Props) => {
   }
 
   useEffect(() => {
-    if (is_show) {
+    if (isShow) {
       loadData()
     }
-  }, [is_show])
+  }, [isShow])
 
-  if (!is_show) {
+  if (!isShow) {
     return null
   }
 

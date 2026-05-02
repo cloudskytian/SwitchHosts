@@ -25,7 +25,7 @@ const HostsViewer = (props: Props) => {
           <Line line={line} key={idx} />
         ))}
       </div>
-      <StatusBar line_count={lines.length} bytes={content.length} read_only={true} />
+      <StatusBar lineCount={lines.length} bytes={content.length} readOnly={true} />
     </div>
   )
 }

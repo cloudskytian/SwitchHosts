@@ -41,12 +41,12 @@ const PathLink = (props: { link: string }) => {
 const Advanced = (props: IProps) => {
   const { data, onChange } = props
   const { lang } = useI18n()
-  const [hosts_path, setHostsPath] = useState('')
-  const [data_dir, setDataDir] = useState('')
+  const [hostsPath, setHostsPath] = useState('')
+  const [dataDir, setDataDir] = useState('')
 
   useEffect(() => {
-    actions.getPathOfSystemHosts().then((hosts_path) => setHostsPath(hosts_path))
-    actions.getDataDir().then((data_dir) => setDataDir(data_dir))
+    actions.getPathOfSystemHosts().then((hostsPath) => setHostsPath(hostsPath))
+    actions.getDataDir().then((dataDir) => setDataDir(dataDir))
   }, [])
 
   return (
@@ -64,13 +64,13 @@ const Advanced = (props: IProps) => {
       <div style={{ width: '100%' }}>
         <div>{lang.where_is_my_hosts}</div>
         <div style={{ marginBottom: 8, opacity: 0.7, fontSize: 12 }}>{lang.your_hosts_file_is}</div>
-        <PathLink link={hosts_path} />
+        <PathLink link={hostsPath} />
       </div>
 
       <div style={{ width: '100%' }}>
         <div>{lang.where_is_my_data}</div>
         <div style={{ marginBottom: 8, opacity: 0.7, fontSize: 12 }}>{lang.your_data_is}</div>
-        <PathLink link={data_dir} />
+        <PathLink link={dataDir} />
       </div>
     </Stack>
   )

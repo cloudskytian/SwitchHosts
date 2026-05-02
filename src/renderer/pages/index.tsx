@@ -30,10 +30,10 @@ export default () => {
   const { setLocale } = useI18n()
   const { loadHostsData } = useHostsData()
   const { configs } = useConfigs()
-  const [left_width, setLeftWidth] = useState(0)
-  const [left_show, setLeftShow] = useState(true)
-  const [right_show, setRightShow] = useState(true)
-  const [use_system_window_frame, setSystemFrame] = useState(false)
+  const [leftWidth, setLeftWidth] = useState(0)
+  const [leftShow, setLeftShow] = useState(true)
+  const [rightShow, setRightShow] = useState(true)
+  const [useSystemWindowFrame, setSystemFrame] = useState(false)
   const init = async () => {
     // v5: migration is handled automatically by the Rust backend on startup.
     // The renderer only needs to load data.
@@ -75,9 +75,9 @@ export default () => {
   return (
     <div className={styles.root}>
       <TopBar
-        show_left_panel={left_show}
-        show_right_panel={right_show}
-        use_system_window_frame={use_system_window_frame}
+        showLeftPanel={leftShow}
+        showRightPanel={rightShow}
+        useSystemWindowFrame={useSystemWindowFrame}
       />
 
       <div className={styles.body}>
@@ -87,20 +87,20 @@ export default () => {
         <div
           className={styles.left}
           style={{
-            width: left_width,
-            left: left_show ? LEFT_SIDEBAR_WIDTH : -left_width,
+            width: leftWidth,
+            left: leftShow ? LEFT_SIDEBAR_WIDTH : -leftWidth,
           }}
         >
-          <LeftPanel width={left_width} />
+          <LeftPanel width={leftWidth} />
         </div>
         <div
           className={clsx(styles.main)}
           style={
             {
-              left: LEFT_SIDEBAR_WIDTH + (left_show ? left_width : 0),
-              right: BODY_PADDING_RIGHT + (right_show ? RIGHT_PANEL_WIDTH : 0),
-              '--editor-radius-left': left_show ? '0' : 'var(--swh-border-radius)',
-              '--editor-radius-right': right_show ? '0' : 'var(--swh-border-radius)',
+              left: LEFT_SIDEBAR_WIDTH + (leftShow ? leftWidth : 0),
+              right: BODY_PADDING_RIGHT + (rightShow ? RIGHT_PANEL_WIDTH : 0),
+              '--editor-radius-left': leftShow ? '0' : 'var(--swh-border-radius)',
+              '--editor-radius-right': rightShow ? '0' : 'var(--swh-border-radius)',
             } as React.CSSProperties
           }
         >
@@ -110,7 +110,7 @@ export default () => {
           className={styles.right_panel}
           style={{
             width: RIGHT_PANEL_WIDTH,
-            right: right_show ? BODY_PADDING_RIGHT : -RIGHT_PANEL_WIDTH,
+            right: rightShow ? BODY_PADDING_RIGHT : -RIGHT_PANEL_WIDTH,
           }}
         >
           <RightPanel />
