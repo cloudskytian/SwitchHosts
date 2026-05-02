@@ -10,6 +10,18 @@
   .edit {
     display: none;
     align-items: center;
+
+    // The edit button only appears on a selected row (filled-accent
+    // background), so default the icon to reverse color for contrast.
+    // When the button itself is hovered, Mantine's subtle variant swaps
+    // in a light-tint background — flip the icon back to the accent.
+    svg {
+      color: var(--swh-font-color-reverse);
+    }
+
+    button:hover svg {
+      color: var(--swh-primary-color);
+    }
   }
 }
 

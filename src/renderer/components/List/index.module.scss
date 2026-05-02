@@ -6,7 +6,10 @@
   line-height: var(--swh-tree-row-height);
   border-radius: 4px;
 
-  &:hover {
+  // Hover signal comes from JS-tracked `data-hovered` rather than
+  // CSS :hover — see Node.tsx for the reason (WebKit leaves :hover
+  // stuck after drag operations).
+  &[data-hovered='1'] {
     background: var(--swh-tree-hover-bg);
   }
 }
@@ -15,7 +18,7 @@
   background: var(--swh-tree-selected-bg);
   color: var(--swh-font-color-reverse);
 
-  &:hover {
+  &[data-hovered='1'] {
     background: var(--swh-tree-selected-bg);
 
     .edit {

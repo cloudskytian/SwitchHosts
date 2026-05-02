@@ -176,7 +176,11 @@ pub fn create_main_window<R: Runtime>(
     )
     .title("SwitchHosts")
     .min_inner_size(300.0, 200.0)
-    .resizable(true);
+    .resizable(true)
+    // Without this Tauri's OS-level drag-drop handler swallows
+    // dragstart inside the webview, breaking the hosts tree's
+    // HTML5 DnD reordering on the frontend.
+    .disable_drag_drop_handler();
 
     #[cfg(target_os = "macos")]
     let mut builder = builder

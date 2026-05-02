@@ -5,7 +5,7 @@
 
 import { feedback_url, homepage_url } from '@common/constants'
 import events from '@common/events'
-import { ActionIcon, Menu } from '@mantine/core'
+import { ActionIcon, Menu, type MenuProps, Tooltip } from '@mantine/core'
 import ImportFromUrl from '@renderer/components/TopBar/ImportFromUrl'
 import { actions, agent } from '@renderer/core/agent'
 import { getErrorMessage, showErrorNotification, showSuccessNotification } from '@renderer/core/notify'
@@ -28,10 +28,13 @@ import styles from './ConfigMenu.module.scss'
 
 interface IProps {
   iconSize?: number
+  size?: number
+  menuPosition?: MenuProps['position']
+  tooltip?: string
 }
 
 const ConfigMenu = (props: IProps) => {
-  const { iconSize = 16 } = props
+  const { iconSize = 16, size, menuPosition, tooltip } = props
   const { lang } = useI18n()
   const { loadHostsData, setCurrentHosts } = useHostsData()
   const [show_import_from_url, setShowImportFromUrl] = useState(false)
@@ -39,13 +42,23 @@ const ConfigMenu = (props: IProps) => {
 
   const strokeWidth = 1.5
 
+  const trigger = (
+    <ActionIcon variant="subtle" color="gray" size={size} aria-label={tooltip}>
+      <IconSettings size={iconSize} stroke={strokeWidth} />
+    </ActionIcon>
+  )
+
   return (
     <>
-      <Menu shadow="md" withinPortal>
+      <Menu shadow="md" withinPortal position={menuPosition}>
         <Menu.Target>
-          <ActionIcon variant="subtle" color="gray">
-            <IconSettings size={iconSize} stroke={strokeWidth} />
-          </ActionIcon>
+          {tooltip ? (
+            <Tooltip label={tooltip} position="right">
+              {trigger}
+            </Tooltip>
+          ) : (
+            trigger
+          )}
         </Menu.Target>
         <Menu.Dropdown className={styles.menu_list}>
           <Menu.Item

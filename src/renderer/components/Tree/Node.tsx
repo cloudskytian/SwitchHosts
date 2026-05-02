@@ -6,7 +6,7 @@
 import { ITreeNodeData, NodeIdType } from '@common/tree'
 import clsx from 'clsx'
 import lodash from 'lodash'
-import React, { useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { isChildOf, isSelfOrChild } from './fn'
 import styles from './style.module.scss'
 import { DropWhereType, MultipleSelectType } from './Tree'
@@ -72,6 +72,18 @@ const Node = (props: INodeProps) => {
 
   const el_node = useRef<HTMLDivElement>(null)
   const el_dragging = useRef<HTMLDivElement>(null)
+
+  // JS-tracked hover instead of CSS :hover because WebKit leaves
+  // :hover stuck on rows the cursor passed over during a drag — the
+  // state doesn't even clear when React replaces the DOM.
+  const [is_hovered, setIsHovered] = useState(false)
+
+  // Clear hover at every is_dragging boundary so a row that was
+  // under the cursor when drag began doesn't stay highlighted, and
+  // any state accumulated mid-drag is dropped on dragend.
+  useEffect(() => {
+    setIsHovered(false)
+  }, [is_dragging])
 
   const attr = nodeAttr ? nodeAttr(data) : data
 
@@ -206,8 +218,13 @@ const Node = (props: INodeProps) => {
           nodeClassName,
         )}
         data-selected={is_selected ? '1' : '0'}
+        data-hovered={is_hovered ? '1' : '0'}
         data-id={data.id}
         draggable={attr.can_drag !== false}
+        onMouseEnter={() => {
+          if (!is_dragging) setIsHovered(true)
+        }}
+        onMouseLeave={() => setIsHovered(false)}
         onDragStart={onDragStart}
         // onDragEnter={onDragEnter}
         onDragOver={onDragOver}
