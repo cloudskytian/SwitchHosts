@@ -178,7 +178,7 @@ const ConfigMenu = (props: IProps) => {
           </Menu.Item>
         </Menu.Dropdown>
       </Menu>
-      <ImportFromUrl is_show={showImportFromUrl} setIsShow={setShowImportFromUrl} />
+      <ImportFromUrl isShow={showImportFromUrl} setIsShow={setShowImportFromUrl} />
     </>
   )
 }

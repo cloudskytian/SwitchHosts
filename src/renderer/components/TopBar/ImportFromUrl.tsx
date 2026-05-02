@@ -11,12 +11,12 @@ import React, { useState } from 'react'
 import styles from './ImportFromUrl.module.scss'
 
 interface Props {
-  is_show: boolean
+  isShow: boolean
   setIsShow: (show: boolean) => void
 }
 
 const ImportFromUrl = (props: Props) => {
-  const { is_show: opened, setIsShow } = props
+  const { isShow: opened, setIsShow } = props
   const { lang } = useI18n()
   const { loadHostsData, setCurrentHosts } = useHostsData()
   const [url, setUrl] = useState('')
