@@ -5,7 +5,7 @@
 
 import { IHostsListObject } from '@common/data'
 import events from '@common/events'
-import { findItemById, getNextSelectedItem, setOnStateOfItem } from '@common/hostsFn'
+import { findItemById, flatten, getNextSelectedItem, setOnStateOfItem } from '@common/hostsFn'
 import { IFindShowSourceParam } from '@common/types'
 import { IHostsWriteOptions } from '@common/types'
 import ItemIcon from '@renderer/components/ItemIcon'
@@ -194,7 +194,22 @@ const List = (props: Props) => {
         selected_ids={selected_ids}
         onChange={(list) => {
           setShowList(list)
-          setList(list).catch((e) => console.error(e))
+          const new_user_list = list.filter((i) => !i.is_sys)
+
+          const enabledIdSeq = (l: IHostsListObject[]) =>
+            flatten(l)
+              .filter((i) => i.on)
+              .map((i) => i.id)
+              .join('\n')
+
+          if (
+            enabledIdSeq(hosts_data.list) !== enabledIdSeq(new_user_list) &&
+            configs?.write_mode
+          ) {
+            writeHostsToSystem(new_user_list).catch((e) => console.error(e))
+          } else {
+            setList(new_user_list).catch((e) => console.error(e))
+          }
         }}
         onSelect={(ids: string[]) => {
           // console.log(ids)
