@@ -21,7 +21,7 @@ interface IWithChildren {
 export function flatten<T extends IWithChildren>(treeList: T[]): T[] {
   let arr: any[] = []
 
-  Array.isArray(treeList) &&
+  if (Array.isArray(treeList)) {
     treeList.map((item) => {
       if (!item) return
 
@@ -32,6 +32,7 @@ export function flatten<T extends IWithChildren>(treeList: T[]): T[] {
         arr = arr.concat(a2)
       }
     })
+  }
 
   return arr
 }

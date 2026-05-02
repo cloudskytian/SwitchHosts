@@ -88,6 +88,7 @@ const RightPanel = () => {
     } else {
       setRuleCount(null)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hosts?.id, hosts?.type])
 
   useOnBroadcast(

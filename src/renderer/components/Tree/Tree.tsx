@@ -50,6 +50,7 @@ const Tree = (props: ITreeProps) => {
     if (props.selectedIds && props.selectedIds.join(',') !== selectedIds.join(',')) {
       setSelectedIds(props.selectedIds)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.selectedIds])
 
   const onDragStart = (id: NodeIdType) => {
@@ -87,7 +88,7 @@ const Tree = (props: ITreeProps) => {
 
   const onTreeChange = (tree: ITreeNodeData[]) => {
     // console.log('onTreeChange...')
-    onChange && onChange(tree)
+    if (onChange) onChange(tree)
   }
 
   const onNodeChange = (id: NodeIdType, data: Partial<ITreeNodeData>) => {
@@ -127,7 +128,7 @@ const Tree = (props: ITreeProps) => {
     }
 
     setSelectedIds(newSelectedIds)
-    onSelect && onSelect(newSelectedIds)
+    if (onSelect) onSelect(newSelectedIds)
   }
 
   const hasNoChild = flatten(tree).length === tree.length

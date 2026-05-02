@@ -11,7 +11,7 @@ export type KeyMapType = [string, string]
 export function flatten(treeList: ITreeNodeData[]): ITreeNodeData[] {
   let arr: any[] = []
 
-  Array.isArray(treeList) &&
+  if (Array.isArray(treeList)) {
     treeList.map((item) => {
       if (!item) return
 
@@ -22,6 +22,7 @@ export function flatten(treeList: ITreeNodeData[]): ITreeNodeData[] {
         arr = arr.concat(a2)
       }
     })
+  }
 
   return arr
 }

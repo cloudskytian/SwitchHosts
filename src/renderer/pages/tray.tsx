@@ -9,7 +9,7 @@ import { useEffect } from 'react'
 import { BiArea } from 'react-icons/bi'
 import styles from './tray.module.scss'
 
-export default () => {
+const TrayPage = () => {
   const { loadHostsData } = useHostsData()
   const { setLocale } = useI18n()
   const { configs, loadConfigs } = useConfigs()
@@ -25,6 +25,7 @@ export default () => {
     document.body.classList.add(`platform-${agent.platform}`, `theme-${configs.theme}`)
   }
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(update, [configs])
   useOnBroadcast(events.config_updated, loadConfigs, [configs])
 
@@ -46,3 +47,5 @@ export default () => {
     </div>
   )
 }
+
+export default TrayPage

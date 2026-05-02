@@ -85,7 +85,7 @@ export const setOnStateOfItem = (
   const itemIsInTopLevel = isInTopLevel(list, id)
   if (multiChoseFolderSwitchAll) {
     item = switchFolderChild(item, on)
-    !itemIsInTopLevel && switchItemParentIsON(newList, item, on)
+    if (!itemIsInTopLevel) switchItemParentIsON(newList, item, on)
   }
 
   if (!on) {

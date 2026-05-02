@@ -9,6 +9,7 @@ const useOnBroadcast = (
   deps: any[] = [],
 ) => {
   // agent.on will return an off function for clean up
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => agent.on(event, handler), deps)
 }
 

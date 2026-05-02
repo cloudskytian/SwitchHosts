@@ -6,11 +6,9 @@
 
 import * as os from 'os'
 
-const defaultOptions = {
-  remove_duplicate_records: false,
+export interface INormalizeOptions {
+  remove_duplicate_records?: boolean
 }
-
-export type INormalizeOptions = Partial<typeof defaultOptions>
 
 interface IHostsLineObj {
   ip: string

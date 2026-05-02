@@ -13,8 +13,6 @@ import { useState } from 'react'
 import useConfigs from '../models/useConfigs'
 import styles from './SetWriteMode.module.scss'
 
-interface Props {}
-
 interface IPendingData {
   id: string
   on: boolean

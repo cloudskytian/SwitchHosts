@@ -46,6 +46,7 @@ const List = (props: Props) => {
     } else {
       setShowList([...hostsData.list])
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hostsData])
 
   useEffect(() => {
@@ -128,12 +129,30 @@ const List = (props: Props) => {
     return result.success
   }
 
-  if (!isTray) {
-    useOnBroadcast(events.toggle_item, onToggleItem, [hostsData, configs])
-    useOnBroadcast(events.write_hosts_to_system, writeHostsToSystem, [hostsData])
-  } else {
-    useOnBroadcast(events.tray_list_updated, loadHostsData)
-  }
+  useOnBroadcast(
+    events.toggle_item,
+    (id: string, on: boolean) => {
+      if (isTray) return
+      onToggleItem(id, on)
+    },
+    [hostsData, configs, isTray],
+  )
+  useOnBroadcast(
+    events.write_hosts_to_system,
+    (list?: IHostsListObject[], options?: IHostsWriteOptions) => {
+      if (isTray) return
+      writeHostsToSystem(list, options)
+    },
+    [hostsData, isTray],
+  )
+  useOnBroadcast(
+    events.tray_list_updated,
+    () => {
+      if (!isTray) return
+      loadHostsData()
+    },
+    [isTray],
+  )
 
   useOnBroadcast(
     events.move_to_trashcan,

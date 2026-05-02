@@ -17,7 +17,7 @@ interface Props {
   width: number
 }
 
-const Index = (props: Props) => {
+const Index = (_props: Props) => {
   const { lang } = useI18n()
   const view = useAtomValue(leftPanelViewAtom)
 

@@ -166,7 +166,7 @@ const ListItem = (props: Props) => {
 
         const menu = new PopupMenu(menuItems)
 
-        !data.is_sys && !isTray && menu.show()
+        if (!data.is_sys && !isTray) menu.show()
         e.preventDefault()
         e.stopPropagation()
       }}

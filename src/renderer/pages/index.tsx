@@ -25,7 +25,7 @@ const LEFT_SIDEBAR_WIDTH = 40
 const RIGHT_PANEL_WIDTH = 240
 const BODY_PADDING_RIGHT = 8
 
-export default () => {
+const MainPage = () => {
   const [loading, setLoading] = useState(true)
   const { setLocale } = useI18n()
   const { loadHostsData } = useHostsData()
@@ -59,10 +59,12 @@ export default () => {
 
   useEffect(() => {
     init().catch((e) => console.error(e))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
     onConfigsUpdate().catch((e) => console.error(e))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [configs])
 
   useOnBroadcast(events.toggle_left_panel, (show: boolean) => setLeftShow(show))
@@ -128,3 +130,5 @@ export default () => {
     </div>
   )
 }
+
+export default MainPage

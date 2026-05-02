@@ -87,12 +87,6 @@ const Node = (props: INodeProps) => {
 
   const attr = nodeAttr ? nodeAttr(data) : data
 
-  const getTargetId = (el: HTMLElement | null): string | undefined => {
-    if (!el) return
-    const id = el.getAttribute('data-id')
-    return id || getTargetId(el.parentNode as HTMLElement)
-  }
-
   const makeDraggingElement = (ne: DragEvent) => {
     const el = elDragging.current
     if (!el) return
@@ -186,7 +180,7 @@ const Node = (props: INodeProps) => {
 
     window._t_dragover_id = ''
 
-    elDragging.current && (elDragging.current.style.display = 'none')
+    if (elDragging.current) elDragging.current.style.display = 'none'
   }
 
   const onUpdate = (kv: Partial<ITreeNodeData>) => {

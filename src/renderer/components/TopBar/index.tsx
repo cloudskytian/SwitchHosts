@@ -32,8 +32,8 @@ interface IProps {
   useSystemWindowFrame: boolean
 }
 
-export default (props: IProps) => {
-  const { showLeftPanel, showRightPanel, useSystemWindowFrame } = props
+const TopBar = (props: IProps) => {
+  const { showLeftPanel, showRightPanel } = props
   const { lang } = useI18n()
   const { isHostsInTrashcan, currentHosts, isReadOnly } = useHostsData()
   const [isOn, setIsOn] = useState(!!currentHosts?.on)
@@ -116,7 +116,7 @@ export default (props: IProps) => {
             <SwitchButton
               on={isOn}
               onChange={(on) => {
-                currentHosts && agent.broadcast(events.toggle_item, currentHosts.id, on)
+                if (currentHosts) agent.broadcast(events.toggle_item, currentHosts.id, on)
               }}
             />
           </Box>
@@ -179,3 +179,5 @@ export default (props: IProps) => {
     </div>
   )
 }
+
+export default TopBar

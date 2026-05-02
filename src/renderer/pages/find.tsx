@@ -84,6 +84,7 @@ const FindPage = () => {
   useEffect(() => {
     if (!configs) return
     init().catch((e) => console.error(e))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [configs])
 
   useEffect(() => {
@@ -92,6 +93,7 @@ const FindPage = () => {
 
   useEffect(() => {
     doFind(debouncedKeyword)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedKeyword, isRegExp, isIgnoreCase])
 
   useEffect(() => {
@@ -253,6 +255,7 @@ const FindPage = () => {
           scrollMode: 'if-needed',
         })
       }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentResultIdx, isSelected, lastScrollResultIdx])
 
     return (
