@@ -3,7 +3,7 @@
  * @homepage: https://oldj.net
  */
 
-import { feedback_url, homepage_url } from '@common/constants'
+import { feedbackUrl, homepageUrl } from '@common/constants'
 import events from '@common/events'
 import { ActionIcon, Menu, type MenuProps, Tooltip } from '@mantine/core'
 import ImportFromUrl from '@renderer/components/TopBar/ImportFromUrl'
@@ -37,7 +37,7 @@ const ConfigMenu = (props: IProps) => {
   const { iconSize = 16, size, menuPosition, tooltip } = props
   const { lang } = useI18n()
   const { loadHostsData, setCurrentHosts } = useHostsData()
-  const [show_import_from_url, setShowImportFromUrl] = useState(false)
+  const [showImportFromUrl, setShowImportFromUrl] = useState(false)
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false)
 
   const strokeWidth = 1.5
@@ -101,13 +101,13 @@ const ConfigMenu = (props: IProps) => {
           </Menu.Item>
           <Menu.Item
             leftSection={<IconMessage2 size={iconSize} stroke={strokeWidth} />}
-            onClick={() => actions.openUrl(feedback_url)}
+            onClick={() => actions.openUrl(feedbackUrl)}
           >
             {lang.feedback}
           </Menu.Item>
           <Menu.Item
             leftSection={<IconHome size={iconSize} stroke={strokeWidth} />}
-            onClick={() => actions.openUrl(homepage_url)}
+            onClick={() => actions.openUrl(homepageUrl)}
           >
             {lang.homepage}
           </Menu.Item>
@@ -178,7 +178,7 @@ const ConfigMenu = (props: IProps) => {
           </Menu.Item>
         </Menu.Dropdown>
       </Menu>
-      <ImportFromUrl is_show={show_import_from_url} setIsShow={setShowImportFromUrl} />
+      <ImportFromUrl is_show={showImportFromUrl} setIsShow={setShowImportFromUrl} />
     </>
   )
 }

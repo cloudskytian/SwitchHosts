@@ -3,7 +3,7 @@
  * @homepage: https://oldj.net
  */
 
-import { http_api_port } from '@common/constants'
+import { httpApiPort } from '@common/constants'
 import { ConfigsType, ThemeType } from '@common/default_configs'
 import { LocaleName } from '@common/i18n'
 import { Box, Checkbox, Group, NativeSelect, Radio, Stack, Text } from '@mantine/core'
@@ -20,13 +20,13 @@ const General = (props: IProps) => {
   const { i18n, lang } = useI18n()
   const { platform } = agent
 
-  const label_width = 80
+  const labelWidth = 80
 
   return (
     <Stack gap="16px">
       <Box w="100%">
         <Group gap="8px">
-          <Box w={label_width}>{lang.language}</Box>
+          <Box w={labelWidth}>{lang.language}</Box>
           <NativeSelect
             value={data.locale}
             onChange={(e) => onChange({ locale: e.target.value as LocaleName })}
@@ -47,7 +47,7 @@ const General = (props: IProps) => {
 
       <Box w="100%">
         <Group gap="8px">
-          <Box w={label_width}>{lang.theme}</Box>
+          <Box w={labelWidth}>{lang.theme}</Box>
           <NativeSelect
             value={data.theme}
             onChange={(e) => onChange({ theme: e.target.value as ThemeType })}
@@ -62,7 +62,7 @@ const General = (props: IProps) => {
 
       <Box w="100%">
         <Group align="flex-start" gap="8px">
-          <Box w={label_width}>{lang.write_mode}</Box>
+          <Box w={labelWidth}>{lang.write_mode}</Box>
           <Stack gap="24px">
             <Radio.Group
               value={data.write_mode || ''}
@@ -83,7 +83,7 @@ const General = (props: IProps) => {
 
       <Box pb="24px" w="100%">
         <Group align="flex-start" gap="8px">
-          <Box w={label_width}>{lang.choice_mode}</Box>
+          <Box w={labelWidth}>{lang.choice_mode}</Box>
           <Stack gap="24px">
             <Radio.Group
               value={data.choice_mode.toString()}
@@ -188,7 +188,7 @@ const General = (props: IProps) => {
             label={lang.http_api_on}
           />
           <Box pl="20px" c="dimmed" fz="sm">
-            {i18n.trans('http_api_on_desc', [http_api_port.toString()])}
+            {i18n.trans('http_api_on_desc', [httpApiPort.toString()])}
           </Box>
           <Stack pl="24px" mt="4px" gap="4px">
             <Checkbox

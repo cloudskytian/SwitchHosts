@@ -18,11 +18,11 @@ interface IWithChildren {
   children?: IWithChildren[]
 }
 
-export function flatten<T extends IWithChildren>(tree_list: T[]): T[] {
+export function flatten<T extends IWithChildren>(treeList: T[]): T[] {
   let arr: any[] = []
 
-  Array.isArray(tree_list) &&
-    tree_list.map((item) => {
+  Array.isArray(treeList) &&
+    treeList.map((item) => {
       if (!item) return
 
       arr.push(item)
@@ -41,8 +41,8 @@ interface IWidthId extends IWithChildren {
 }
 
 export function getNodeById<T extends IWidthId>(
-  tree_list: T[],
+  treeList: T[],
   id: string,
 ): T | undefined {
-  return flatten(tree_list).find((i) => i.id === id)
+  return flatten(treeList).find((i) => i.id === id)
 }
