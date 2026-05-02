@@ -125,3 +125,47 @@ describe('Tree DnD dispatch', () => {
     expect(ids(lastReceivedTree(onChange))).toEqual(['c', 'a', 'b'])
   })
 })
+
+describe('Tree reorder DOM reconciliation', () => {
+  // Each Node's key is `node.id`, so React's keyed reconciliation
+  // physically moves the same DOM elements around on a reorder
+  // rather than replacing them. Other code (drag indicators,
+  // hover tracking, focus, etc.) implicitly depends on this.
+  it('preserves DOM node identity for keyed children across a reorder', () => {
+    const initial: ITreeNodeData[] = [
+      { id: 'a' }, { id: 'b' }, { id: 'c' }, { id: 'd' }, { id: 'e' },
+    ]
+    const reordered: ITreeNodeData[] = [
+      { id: 'a' }, { id: 'd' }, { id: 'b' }, { id: 'c' }, { id: 'e' },
+    ]
+
+    const onChange = vi.fn()
+    const { container, rerender } = render(
+      <Harness initial_data={initial} onChange={onChange} />,
+    )
+
+    const before = {
+      a: findNode(container, 'a'),
+      b: findNode(container, 'b'),
+      c: findNode(container, 'c'),
+      d: findNode(container, 'd'),
+      e: findNode(container, 'e'),
+    }
+
+    rerender(<Harness initial_data={reordered} onChange={onChange} />)
+
+    const after = {
+      a: findNode(container, 'a'),
+      b: findNode(container, 'b'),
+      c: findNode(container, 'c'),
+      d: findNode(container, 'd'),
+      e: findNode(container, 'e'),
+    }
+
+    expect(after.a).toBe(before.a)
+    expect(after.b).toBe(before.b)
+    expect(after.c).toBe(before.c)
+    expect(after.d).toBe(before.d)
+    expect(after.e).toBe(before.e)
+  })
+})
