@@ -32,7 +32,7 @@ import styles from './EditHostsInfo.module.scss'
 const EditHostsInfo = () => {
   const { lang } = useI18n()
   const [hosts, setHosts] = useState<IHostsListObject | null>(null)
-  const { hosts_data, setList, current_hosts, setCurrentHosts } = useHostsData()
+  const { hostsData, setList, currentHosts, setCurrentHosts } = useHostsData()
   const [isShow, setIsShow] = useState(false)
   const [isAdd, setIsAdd] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -57,16 +57,16 @@ const EditHostsInfo = () => {
         ...data,
         id: uuidv4(),
       }
-      const list: IHostsListObject[] = [...hosts_data.list, h]
+      const list: IHostsListObject[] = [...hostsData.list, h]
       await setList(list)
       agent.broadcast(events.select_hosts, h.id, 1000)
     } else if (data && data.id) {
-      const h: IHostsListObject | undefined = hostsFn.findItemById(hosts_data.list, data.id)
+      const h: IHostsListObject | undefined = hostsFn.findItemById(hostsData.list, data.id)
       if (h) {
         Object.assign(h, data)
-        await setList([...hosts_data.list])
+        await setList([...hostsData.list])
 
-        if (data.id === current_hosts?.id) {
+        if (data.id === currentHosts?.id) {
           setCurrentHosts(h)
         }
       } else {
@@ -192,7 +192,7 @@ const EditHostsInfo = () => {
   }
 
   const forGroup = (): React.ReactElement => {
-    const list = hostsFn.flatten(hosts_data.list)
+    const list = hostsFn.flatten(hostsData.list)
 
     const sourceList: IHostsListObject[] = list
       .filter((item) => !item.type || item.type === 'local' || item.type === 'remote')

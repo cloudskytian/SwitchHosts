@@ -23,23 +23,23 @@ import styles from './Trashcan.module.scss'
 
 const Trashcan = () => {
   const { lang } = useI18n()
-  const { hosts_data, current_hosts, setCurrentHosts, loadHostsData } = useHostsData()
+  const { hostsData, currentHosts, setCurrentHosts, loadHostsData } = useHostsData()
   const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false)
 
   const trashList = useMemo<ITrashcanListObject[]>(
     () =>
-      hosts_data.trashcan.map((i) => ({
+      hostsData.trashcan.map((i) => ({
         ...i,
         id: i.data.id,
         can_drag: false,
         type: i.data.type,
       })),
-    [hosts_data.trashcan],
+    [hostsData.trashcan],
   )
 
   const onSelect = (ids: string[]) => {
     const id = ids[0]
-    const item = hosts_data.trashcan.find((i) => i.data.id === id)
+    const item = hostsData.trashcan.find((i) => i.data.id === id)
     if (!item) return
     setCurrentHosts(item.data)
   }
@@ -59,7 +59,7 @@ const Trashcan = () => {
       })
   }
 
-  const isEmpty = hosts_data.trashcan.length === 0
+  const isEmpty = hostsData.trashcan.length === 0
 
   return (
     <div className={styles.root}>
@@ -90,7 +90,7 @@ const Trashcan = () => {
             nodeSelectedClassName={list_styles.node_selected}
             nodeCollapseArrowClassName={list_styles.arrow}
             onSelect={onSelect}
-            selectedIds={current_hosts ? [current_hosts.id] : []}
+            selectedIds={currentHosts ? [currentHosts.id] : []}
           />
         )}
       </div>

@@ -25,9 +25,9 @@ import { toggleCommentByLine, toggleCommentBySelection } from './hosts_highlight
 import styles from './HostsEditor.module.scss'
 
 const HostsEditor = () => {
-  const { current_hosts, isReadOnly } = useHostsData()
-  const hostsId = current_hosts?.id || '0'
-  const readOnly = isReadOnly(current_hosts)
+  const { currentHosts, isReadOnly } = useHostsData()
+  const hostsId = currentHosts?.id || '0'
+  const readOnly = isReadOnly(currentHosts)
   const [content, setContent] = useState('')
 
   const refMount = useRef<HTMLDivElement>(null)

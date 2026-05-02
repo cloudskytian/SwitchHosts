@@ -35,28 +35,28 @@ interface IProps {
 export default (props: IProps) => {
   const { showLeftPanel, showRightPanel, useSystemWindowFrame } = props
   const { lang } = useI18n()
-  const { isHostsInTrashcan, current_hosts, isReadOnly } = useHostsData()
-  const [isOn, setIsOn] = useState(!!current_hosts?.on)
+  const { isHostsInTrashcan, currentHosts, isReadOnly } = useHostsData()
+  const [isOn, setIsOn] = useState(!!currentHosts?.on)
   const iconSize = 20
   const iconStroke = 1.5
 
   const showToggleSwitch =
-    !showLeftPanel && current_hosts && !isHostsInTrashcan(current_hosts.id)
-  const showHistory = !current_hosts
+    !showLeftPanel && currentHosts && !isHostsInTrashcan(currentHosts.id)
+  const showHistory = !currentHosts
   const showWindowControls = agent.platform !== 'darwin'
 
   useEffect(() => {
-    setIsOn(!!current_hosts?.on)
-  }, [current_hosts])
+    setIsOn(!!currentHosts?.on)
+  }, [currentHosts])
 
   useOnBroadcast(
     events.set_hosts_on_status,
     (id: string, on: boolean) => {
-      if (current_hosts && current_hosts.id === id) {
+      if (currentHosts && currentHosts.id === id) {
         setIsOn(on)
       }
     },
-    [current_hosts],
+    [currentHosts],
   )
 
   return (
@@ -88,12 +88,12 @@ export default (props: IProps) => {
 
       <Box className={styles.title_wrapper} data-tauri-drag-region>
         <Flex className={styles.title} gap={8} align="center" justify="center">
-          {current_hosts ? (
+          {currentHosts ? (
             <>
               <span className={styles.hosts_icon}>
-                <ItemIcon type={current_hosts.type} isCollapsed={!current_hosts.folder_open} />
+                <ItemIcon type={currentHosts.type} isCollapsed={!currentHosts.folder_open} />
               </span>
-              <span className={styles.hosts_title}>{current_hosts.title || lang.untitled}</span>
+              <span className={styles.hosts_title}>{currentHosts.title || lang.untitled}</span>
             </>
           ) : (
             <>
@@ -104,7 +104,7 @@ export default (props: IProps) => {
             </>
           )}
 
-          {isReadOnly(current_hosts) ? (
+          {isReadOnly(currentHosts) ? (
             <span className={styles.read_only}>{lang.read_only}</span>
           ) : null}
         </Flex>
@@ -116,7 +116,7 @@ export default (props: IProps) => {
             <SwitchButton
               on={isOn}
               onChange={(on) => {
-                current_hosts && agent.broadcast(events.toggle_item, current_hosts.id, on)
+                currentHosts && agent.broadcast(events.toggle_item, currentHosts.id, on)
               }}
             />
           </Box>

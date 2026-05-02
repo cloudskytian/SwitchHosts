@@ -30,7 +30,7 @@ interface Props {
 const ListItem = (props: Props) => {
   const { data, isTray, selectedIds } = props
   const { lang, i18n } = useI18n()
-  const { hosts_data, setList, current_hosts, setCurrentHosts } = useHostsData()
+  const { hostsData, setList, currentHosts, setCurrentHosts } = useHostsData()
   const [isCollapsed, setIsCollapsed] = useState(!!data.isCollapsed)
   const [isOn, setIsOn] = useState(data.on)
   const el = useRef<HTMLDivElement>(null)
@@ -60,7 +60,7 @@ const ListItem = (props: Props) => {
   )
 
   useEffect(() => {
-    const isSelected = data.id === current_hosts?.id
+    const isSelected = data.id === currentHosts?.id
 
     if (isSelected && el.current) {
       // el.current.scrollIntoViewIfNeeded()
@@ -69,7 +69,7 @@ const ListItem = (props: Props) => {
         scrollMode: 'if-needed',
       })
     }
-  }, [data, current_hosts, el])
+  }, [data, currentHosts, el])
 
   const onSelect = () => {
     setCurrentHosts(data.is_sys ? null : data)
@@ -81,7 +81,7 @@ const ListItem = (props: Props) => {
     const _isCollapsed = !isCollapsed
     setIsCollapsed(_isCollapsed)
     setList(
-      updateOneItem(hosts_data.list, {
+      updateOneItem(hostsData.list, {
         id: data.id,
         isCollapsed: _isCollapsed,
       }),
@@ -98,7 +98,7 @@ const ListItem = (props: Props) => {
   if (!data) return null
 
   const isFolder = data.type === 'folder'
-  const isSelected = data.id === current_hosts?.id
+  const isSelected = data.id === currentHosts?.id
 
   return (
     <div

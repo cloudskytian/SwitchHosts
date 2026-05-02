@@ -5,11 +5,11 @@
 
 import { ConfigsType } from '@common/default_configs'
 import { actions } from '@renderer/core/agent'
-import { configs_atom } from '@renderer/stores/configs'
+import { configsAtom } from '@renderer/stores/configs'
 import { useAtom } from 'jotai'
 
 export default function useConfigs() {
-  const [configs, setConfigs] = useAtom(configs_atom)
+  const [configs, setConfigs] = useAtom(configsAtom)
 
   const loadConfigs = async () => {
     setConfigs(await actions.configAll())

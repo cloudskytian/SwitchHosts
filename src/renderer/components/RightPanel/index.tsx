@@ -54,14 +54,14 @@ const InfoRow: React.FC<{
 
 const RightPanel = () => {
   const { lang } = useI18n()
-  const { current_hosts, hosts_data, setCurrentHosts, isHostsInTrashcan, loadHostsData } =
+  const { currentHosts, hostsData, setCurrentHosts, isHostsInTrashcan, loadHostsData } =
     useHostsData()
   const [ruleCount, setRuleCount] = useState<number | null>(null)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false)
   const refLoadingId = useRef<string | null>(null)
 
-  const hosts = current_hosts
+  const hosts = currentHosts
   const type = hosts?.type || 'local'
   const hasContent = !!hosts && (type === 'local' || type === 'remote')
 
@@ -216,7 +216,7 @@ const RightPanel = () => {
     type === 'group'
       ? (hosts.include || []).map((id) => ({
           id,
-          item: hostsFn.findItemById(hosts_data.list, id),
+          item: hostsFn.findItemById(hostsData.list, id),
         }))
       : []
 

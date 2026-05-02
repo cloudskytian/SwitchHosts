@@ -27,10 +27,10 @@ interface Props {
 
 const List = (props: Props) => {
   const { isTray } = props
-  const { hosts_data, loadHostsData, setList, current_hosts, setCurrentHosts } = useHostsData()
+  const { hostsData, loadHostsData, setList, currentHosts, setCurrentHosts } = useHostsData()
   const { configs } = useConfigs()
   const { lang } = useI18n()
-  const [selectedIds, setSelectedIds] = useState<string[]>([current_hosts?.id || '0'])
+  const [selectedIds, setSelectedIds] = useState<string[]>([currentHosts?.id || '0'])
   const [showList, setShowList] = useState<IHostsListObject[]>([])
 
   useEffect(() => {
@@ -41,19 +41,19 @@ const List = (props: Props) => {
           title: lang.system_hosts,
           is_sys: true,
         },
-        ...hosts_data.list,
+        ...hostsData.list,
       ])
     } else {
-      setShowList([...hosts_data.list])
+      setShowList([...hostsData.list])
     }
-  }, [hosts_data])
+  }, [hostsData])
 
   useEffect(() => {
-    if (isTray || !current_hosts) return
-    if (!hosts_data.trashcan.find((item) => item.data.id === current_hosts.id)) return
+    if (isTray || !currentHosts) return
+    if (!hostsData.trashcan.find((item) => item.data.id === currentHosts.id)) return
 
     setSelectedIds([])
-  }, [current_hosts, hosts_data.trashcan, isTray])
+  }, [currentHosts, hostsData.trashcan, isTray])
 
   const onToggleItem = async (id: string, on: boolean) => {
     console.log(`writeMode: ${configs?.write_mode}`)
@@ -65,7 +65,7 @@ const List = (props: Props) => {
     }
 
     const newList = setOnStateOfItem(
-      hosts_data.list,
+      hostsData.list,
       id,
       on,
       configs?.choice_mode ?? 0,
@@ -85,7 +85,7 @@ const List = (props: Props) => {
     options?: IHostsWriteOptions,
   ): Promise<boolean> => {
     if (!Array.isArray(list)) {
-      list = hosts_data.list
+      list = hostsData.list
     }
 
     const content: string = await actions.getContentOfList(list)
@@ -96,10 +96,10 @@ const List = (props: Props) => {
       //   body: lang.hosts_updated,
       // })
 
-      if (current_hosts) {
-        const hosts = findItemById(list, current_hosts.id)
+      if (currentHosts) {
+        const hosts = findItemById(list, currentHosts.id)
         if (hosts) {
-          agent.broadcast(events.set_hosts_on_status, current_hosts.id, hosts.on)
+          agent.broadcast(events.set_hosts_on_status, currentHosts.id, hosts.on)
         }
       }
     } else {
@@ -129,8 +129,8 @@ const List = (props: Props) => {
   }
 
   if (!isTray) {
-    useOnBroadcast(events.toggle_item, onToggleItem, [hosts_data, configs])
-    useOnBroadcast(events.write_hosts_to_system, writeHostsToSystem, [hosts_data])
+    useOnBroadcast(events.toggle_item, onToggleItem, [hostsData, configs])
+    useOnBroadcast(events.write_hosts_to_system, writeHostsToSystem, [hostsData])
   } else {
     useOnBroadcast(events.tray_list_updated, loadHostsData)
   }
@@ -142,20 +142,20 @@ const List = (props: Props) => {
       await actions.moveManyToTrashcan(ids)
       await loadHostsData()
 
-      if (current_hosts && ids.includes(current_hosts.id)) {
+      if (currentHosts && ids.includes(currentHosts.id)) {
         // 选中删除指定节点后的兄弟节点
-        const nextItem = getNextSelectedItem(hosts_data.list, (i) => ids.includes(i.id))
+        const nextItem = getNextSelectedItem(hostsData.list, (i) => ids.includes(i.id))
         setCurrentHosts(nextItem || null)
         setSelectedIds(nextItem ? [nextItem.id] : [])
       }
     },
-    [current_hosts, hosts_data],
+    [currentHosts, hostsData],
   )
 
   useOnBroadcast(
     events.select_hosts,
     async (id: string, waitMs: number = 0) => {
-      const hosts = findItemById(hosts_data.list, id)
+      const hosts = findItemById(hostsData.list, id)
       if (!hosts) {
         if (waitMs > 0) {
           setTimeout(() => {
@@ -168,7 +168,7 @@ const List = (props: Props) => {
       setCurrentHosts(hosts)
       setSelectedIds([id])
     },
-    [hosts_data],
+    [hostsData],
   )
 
   useOnBroadcast(events.reload_list, loadHostsData)
@@ -203,7 +203,7 @@ const List = (props: Props) => {
               .join('\n')
 
           if (
-            enabledIdSeq(hosts_data.list) !== enabledIdSeq(newUserList) &&
+            enabledIdSeq(hostsData.list) !== enabledIdSeq(newUserList) &&
             configs?.write_mode
           ) {
             writeHostsToSystem(newUserList).catch((e) => console.error(e))

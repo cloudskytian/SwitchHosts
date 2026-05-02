@@ -9,7 +9,7 @@ import List from '@renderer/components/List'
 import { agent } from '@renderer/core/agent'
 import { PopupMenu } from '@renderer/core/PopupMenu'
 import useI18n from '@renderer/models/useI18n'
-import { left_panel_view_atom } from '@renderer/stores/ui'
+import { leftPanelViewAtom } from '@renderer/stores/ui'
 import { useAtomValue } from 'jotai'
 import styles from './index.module.scss'
 
@@ -19,7 +19,7 @@ interface Props {
 
 const Index = (props: Props) => {
   const { lang } = useI18n()
-  const view = useAtomValue(left_panel_view_atom)
+  const view = useAtomValue(leftPanelViewAtom)
 
   const menu = new PopupMenu([
     {

@@ -2,15 +2,15 @@ import { ActionIcon, Indicator, Stack, Tooltip } from '@mantine/core'
 import ConfigMenu from '@renderer/components/TopBar/ConfigMenu'
 import useHostsData from '@renderer/models/useHostsData'
 import useI18n from '@renderer/models/useI18n'
-import { left_panel_view_atom } from '@renderer/stores/ui'
+import { leftPanelViewAtom } from '@renderer/stores/ui'
 import { IconList, IconTrash } from '@tabler/icons-react'
 import { useAtom } from 'jotai'
 import styles from './index.module.scss'
 
 const LeftSidebar = () => {
   const { lang } = useI18n()
-  const { hosts_data } = useHostsData()
-  const [view, setView] = useAtom(left_panel_view_atom)
+  const { hostsData } = useHostsData()
+  const [view, setView] = useAtom(leftPanelViewAtom)
 
   return (
     <div className={styles.root}>
@@ -28,9 +28,9 @@ const LeftSidebar = () => {
         </Tooltip>
         <Tooltip label={lang.trashcan} position="right">
           <Indicator
-            label={hosts_data.trashcan.length}
+            label={hostsData.trashcan.length}
             size={14}
-            disabled={hosts_data.trashcan.length === 0}
+            disabled={hostsData.trashcan.length === 0}
             color="gray"
             offset={4}
           >
