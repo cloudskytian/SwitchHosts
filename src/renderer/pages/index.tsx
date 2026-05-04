@@ -37,8 +37,11 @@ const MainPage = () => {
   const init = async () => {
     // v5: migration is handled automatically by the Rust backend on startup.
     // The renderer only needs to load data.
-    await loadHostsData()
-    setLoading(false)
+    try {
+      await loadHostsData()
+    } finally {
+      setLoading(false)
+    }
   }
 
   const onConfigsUpdate = async () => {
