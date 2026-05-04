@@ -14,9 +14,7 @@ export function resolveSystemLocale(): LocaleName {
   return 'en'
 }
 
-const _initialLocale = localStorage.getItem('locale') as LocaleName | undefined
-
-export const localeAtom = atom<LocaleName>(_initialLocale || resolveSystemLocale())
+export const localeAtom = atom<LocaleName>(resolveSystemLocale())
 export const i18nAtom = atom((get) => new I18N(get(localeAtom)))
 export const isHalfWidthAtom = atom((get) => get(i18nAtom).lang.colon.startsWith(':'))
 export const langAtom = atom((get) => get(i18nAtom).lang)
